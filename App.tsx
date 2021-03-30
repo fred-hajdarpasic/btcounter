@@ -49,21 +49,45 @@ const App = () => {
         }
     };
 
+    const startNotification = async (id: string) => {
+        await BleManager.startNotification(id, 'FFE0', 'FFE1')
+            .then(() => {
+                console.log("Notification started");
+            })
+            .catch((error) => {
+                console.log(error);
+        });
+    };
+
+    const stopNotification = async (id: string) => {
+        await BleManager.stopNotification(id, 'FFE0', 'FFE1')
+            .then(() => {
+                console.log("Notification stopped");
+            })
+            .catch((error) => {
+                console.log(error);
+        });
+    };
+
     const startScan = () => {
         if (!isScanning) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            console.log('Start Scanning...');
-            BleManager.scan([], 3, true).then((results) => {
-                console.log('Scanning...');
-                setIsScanning(true);
+            setIsScanning(true);
+            console.log('Initiating Scanning...');
+            setList([]);
+            BleManager.scan([], 20, true).then(() => {
+                console.log('Started Scanning...');
             }).catch(err => {
+                setIsScanning(false);
                 console.error(err);
             });
+        } else {
+            console.log('This is wrong - it is already scanning ...');
         }
     }
 
     const handleStopScan = () => {
-        console.log('Scan is stopped');
+        console.log(`Scan is stopped. isScanning = ${isScanning}`);
         setIsScanning(false);
     }
 
@@ -85,99 +109,112 @@ const App = () => {
         });
     }
 
-    const testPeripheral = async (peripheral: BtCounterPeripheral) => {
-        const id = peripheral.peripheral.id;
-        if (peripheral) {
-            if (peripheral.connected) {
-                BleManager.disconnect(id);
-            } else {
-                try {
-                    await BleManager.connect(id);
-                    let p = peripherals.get(id);
-                    if (p) {
-                        p.connected = true;
-                        peripherals.set(id, p);
-                        setList(Array.from(peripherals.values()));
+    const testPeripheral = (peripheral: BtCounterPeripheral) => {
+        (async () => {
+            const id = peripheral.peripheral.id;
+            console.log('testPeripheral ' + id);
+            if (peripheral) {
+                if (peripheral.connected) {
+                    console.log('Disconnecting from ' + id);
+                    await stopNotification(id);
+                    await BleManager.disconnect(id);
+                    peripheral.connected = false;
+                    console.log('Disconnected from ' + id);
+                } else {
+                    try {
+                        console.log('Connecting to ' + id);
+                        await BleManager.connect(id);
+                        await timeout(100);
+                        /* Test read current RSSI value */
+                        await retrieveServices(id);
+                        // await retrieveRssi(id, p);
+    
+                        await startNotification(id);
+                        peripheral.connected = true;
+                        console.log('Connected to ' + id);
+                    } catch (error) {
+                        console.log('Connection error', error);
                     }
-                    console.log('Connected to ' + id);
-                    await timeout(100);
-                    /* Test read current RSSI value */
-                    await retrieveServices(id);
-                    // await retrieveRssi(id, p);
-
-                    BleManager.startNotification(id, 'FFE0', 'FFE1')
-                        .then(() => {
-                            console.log("Notification started");
-                        })
-                        .catch((error) => {
-                            console.log(error);
-                        });
-                } catch (error) {
-                    console.log('Connection error', error);
+                }
+                let p = peripherals.get(id);
+                if (p) {
+                    peripherals.set(id, p);
+                    setList(Array.from(peripherals.values()));
                 }
             }
-        }
+        })();
     };
 
     useEffect(() => {
-        console.log('start');
-        BleManager.start({ showAlert: false });
-
-        const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-            console.log('Got ble peripheral', peripheral);
-            if (peripheral.name === 'CC2650 SensorTag') {
-                let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
-                peripherals.set(peripheral.id, btPeripheral);
-                setList(Array.from(peripherals.values()));
-            }
-        };
-    
-        const handleDisconnectedPeripheral = (data: any) => {
-            let peripheral = peripherals.get(data.peripheral);
-            if (peripheral) {
-                peripheral.connected = false;
-                peripherals.set(peripheral.peripheral.id, peripheral);
-                setList(Array.from(peripherals.values()));
-            }
-            console.log('Disconnected from ' + data.peripheral);
-        };
-    
-        const handleUpdateValueForCharacteristic = async (data: any) => {
-            console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
-            if (data.value[0]) {
-                setNowCount(nowCount + 1);
-            }
-        }
-    
-        bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-        bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
-        bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
-        bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
-
-        if (Platform.OS === 'android' && Platform.Version >= 23) {
-            PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
-                if (result) {
-                    console.log("Permission is OK");
-                } else {
-                    PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
-                        if (result) {
-                            console.log("User accept");
+        (async () => {
+            try {
+                console.log('BT Counter initialisation ... Started');
+                await BleManager.start({ showAlert: false });
+        
+                const handleDiscoverPeripheral = (peripheral: Peripheral) => {
+                    (async () => {
+                        if (peripheral.name === 'CC2650 SensorTag') {
+                            console.log('Got SensorTag', peripheral);
+                            let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
+                            peripherals.set(peripheral.id, btPeripheral);
+                            await BleManager.stopScan();
+                            setIsScanning(false);
+                            setList(Array.from(peripherals.values()));
                         } else {
-                            console.log("User refuse");
+                            console.log('Not SensorTag - ignoring');
+                        }
+                    })();
+                };
+            
+                const handleDisconnectedPeripheral = (data: any) => {
+                    let peripheral = peripherals.get(data.peripheral);
+                    if (peripheral) {
+                        peripheral.connected = false;
+                        peripherals.set(peripheral.peripheral.id, peripheral);
+                        setList(Array.from(peripherals.values()));
+                    }
+                    console.log('Disconnected from ' + data.peripheral);
+                };
+            
+                const handleUpdateValueForCharacteristic = (data: any) => {
+                    console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
+                    if (data.value[0]) {
+                        setNowCount(nowCount + 1);
+                    }
+                }
+            
+                bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+                bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
+                bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
+                bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+        
+                if (Platform.OS === 'android' && Platform.Version >= 23) {
+                    PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
+                        if (result) {
+                            console.log("Permission is OK");
+                        } else {
+                            PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
+                                if (result) {
+                                    console.log("User accept");
+                                } else {
+                                    console.log("User refuse");
+                                }
+                            });
                         }
                     });
                 }
-            });
-        }
-        console.log('unmount');
-
-        return (() => {
-            bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-            bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
-            bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
-            bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
-        });
-    }, [peripherals]);
+                console.log('BT Counter initialisation ... Completed');
+        
+                return (() => {
+                    bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+                    bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
+                    bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
+                    bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+                });
+            } catch (error) {
+            }
+        })();
+    }, []);
 
     const renderItem = (item: BtCounterPeripheral) => {
         // console.log(`item=${JSON.stringify(item)}`);
@@ -202,9 +239,9 @@ const App = () => {
                     style={styles.scrollView}>
                     <View style={styles.body}>
                         <View style={{ margin: 10 }}>
-                            <Button
-                                title={'Scan Bluetooth (' + (isScanning ? 'on' : 'off') + ')'}
-                                onPress={() => startScan()}
+                            <Button color={!isScanning ? 'blue' : 'pink'}
+                                title={!isScanning ? 'Scan Bluetooth' : 'Stop Scanning' }
+                                onPress={() => !isScanning ? startScan() : undefined }
                             />
                         </View>
 
