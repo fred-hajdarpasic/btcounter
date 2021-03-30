@@ -1,24 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable eslint-comments/no-unused-disable */
 /* eslint-disable no-trailing-spaces */
 /* eslint-disable quotes */
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable prettier/prettier */
 import React, { useState, useEffect } from 'react';
-import {
-    SafeAreaView,
-    StyleSheet,
-    ScrollView,
-    View,
-    Text,
-    StatusBar,
-    NativeModules,
-    NativeEventEmitter,
-    Button,
-    Platform,
-    PermissionsAndroid,
-    FlatList,
-    TouchableHighlight,
-} from 'react-native';
+import { SafeAreaView, StyleSheet, ScrollView, View, Text, StatusBar, NativeModules, NativeEventEmitter, Button, Platform, PermissionsAndroid, FlatList, TouchableHighlight, TextInput } from 'react-native';
 
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 
@@ -33,7 +20,7 @@ interface BtCounterPeripheral {
 }
 
 const timeout = (ms: number): Promise<void> => {
-    return new Promise(resolve => { 
+    return new Promise(resolve => {
         console.log(`Initiating timeout of ${ms} msec.`);
         setTimeout(resolve, ms);
     });
@@ -41,14 +28,16 @@ const timeout = (ms: number): Promise<void> => {
 
 const App = () => {
     const [isScanning, setIsScanning] = useState(false);
-    const peripherals = new Map<string, BtCounterPeripheral>();
+    const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
+    const [isCollecting, setCollecting] = useState(false);
+    const [nowCount, setNowCount] = useState(0);
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
         console.log('Retrieved peripheral services', JSON.stringify(peripheralData));
     };
-    
+
     const retrieveRssi = async (id: string, p: BtCounterPeripheral | undefined): Promise<void> => {
         let rssi = await BleManager.readRSSI(id);
         console.log('Retrieved actual RSSI value', rssi);
@@ -59,12 +48,12 @@ const App = () => {
             setList(Array.from(peripherals.values()));
         }
     };
-    
+
     const startScan = () => {
         if (!isScanning) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                console.log('Start Scanning...');
-                BleManager.scan([], 3, true).then((results) => {
+            console.log('Start Scanning...');
+            BleManager.scan([], 3, true).then((results) => {
                 console.log('Scanning...');
                 setIsScanning(true);
             }).catch(err => {
@@ -78,20 +67,6 @@ const App = () => {
         setIsScanning(false);
     }
 
-    const handleDisconnectedPeripheral = (data: any) => {
-        let peripheral = peripherals.get(data.peripheral);
-        if (peripheral) {
-            peripheral.connected = false;
-            peripherals.set(peripheral.peripheral.id, peripheral);
-            setList(Array.from(peripherals.values()));
-        }
-        console.log('Disconnected from ' + data.peripheral);
-    }
-
-    const handleUpdateValueForCharacteristic = (data: any) => {
-        console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
-    }
-
     const retrieveConnected = () => {
         BleManager.getConnectedPeripherals([]).then((results) => {
             if (results.length == 0) {
@@ -101,7 +76,7 @@ const App = () => {
             for (var i = 0; i < results.length; i++) {
                 let peripheral = results[i] as Peripheral;
                 let connected = true;
-                let btCounterPeripheral = {peripheral, connected} as BtCounterPeripheral;
+                let btCounterPeripheral = { peripheral, connected } as BtCounterPeripheral;
 
 
                 peripherals.set(peripheral.id, btCounterPeripheral);
@@ -109,15 +84,6 @@ const App = () => {
             }
         });
     }
-
-    const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-        console.log('Got ble peripheral', peripheral);
-        if (peripheral.name === 'CC2650 SensorTag') {
-            let btPeripheral = {connected: false, peripheral: peripheral} as BtCounterPeripheral;
-            peripherals.set(peripheral.id, btPeripheral);
-            setList(Array.from(peripherals.values()));
-        }
-    };
 
     const testPeripheral = async (peripheral: BtCounterPeripheral) => {
         const id = peripheral.peripheral.id;
@@ -138,13 +104,13 @@ const App = () => {
                     /* Test read current RSSI value */
                     await retrieveServices(id);
                     // await retrieveRssi(id, p);
-                    
+
                     BleManager.startNotification(id, 'FFE0', 'FFE1')
                         .then(() => {
-                          console.log("Notification started");
+                            console.log("Notification started");
                         })
                         .catch((error) => {
-                          console.log(error);
+                            console.log(error);
                         });
                 } catch (error) {
                     console.log('Connection error', error);
@@ -157,6 +123,32 @@ const App = () => {
         console.log('start');
         BleManager.start({ showAlert: false });
 
+        const handleDiscoverPeripheral = (peripheral: Peripheral) => {
+            console.log('Got ble peripheral', peripheral);
+            if (peripheral.name === 'CC2650 SensorTag') {
+                let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
+                peripherals.set(peripheral.id, btPeripheral);
+                setList(Array.from(peripherals.values()));
+            }
+        };
+    
+        const handleDisconnectedPeripheral = (data: any) => {
+            let peripheral = peripherals.get(data.peripheral);
+            if (peripheral) {
+                peripheral.connected = false;
+                peripherals.set(peripheral.peripheral.id, peripheral);
+                setList(Array.from(peripherals.values()));
+            }
+            console.log('Disconnected from ' + data.peripheral);
+        };
+    
+        const handleUpdateValueForCharacteristic = async (data: any) => {
+            console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
+            if (data.value[0]) {
+                setNowCount(nowCount + 1);
+            }
+        }
+    
         bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
         bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
         bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
@@ -184,11 +176,11 @@ const App = () => {
             bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
             bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
             bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
-        })
-    }, []);
+        });
+    }, [peripherals]);
 
     const renderItem = (item: BtCounterPeripheral) => {
-        console.log(`item=${JSON.stringify(item)}`);
+        // console.log(`item=${JSON.stringify(item)}`);
         const color = item.connected ? 'green' : '#fff';
         return (
             <TouchableHighlight onPress={() => testPeripheral(item)}>
@@ -233,6 +225,15 @@ const App = () => {
                     renderItem={({ item }) => renderItem(item)}
                     keyExtractor={item => item.id}
                 />
+                <View style={{ margin: 10, flexDirection: "row", justifyContent: 'space-between' }}>
+                    <TouchableHighlight>
+                        <Button title="Start" onPress={() => { setCollecting(true)}}/>
+                    </TouchableHighlight>
+                    <TextInput style={{ backgroundColor: "red", flex: 0.5 }}>{nowCount}</TextInput>
+                    <TouchableHighlight>
+                        <Button title="Stop" onPress={() => setCollecting(false)}/>
+                    </TouchableHighlight>
+                </View>
             </SafeAreaView>
         </>
     );
