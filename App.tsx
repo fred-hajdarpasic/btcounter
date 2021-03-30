@@ -90,15 +90,12 @@ const App = () => {
 
     const handleDiscoverPeripheral = (peripheral: Peripheral) => {
         console.log('Got ble peripheral', peripheral);
-        if (!peripheral.name) {
-            peripheral.name = 'NO NAME';
+        if (peripheral.name === 'CC2650 SensorTag') {
+            let btPeripheral = {connected: false, peripheral: peripheral} as BtCounterPeripheral;
+            peripherals.set(peripheral.id, btPeripheral);
+            setList(Array.from(peripherals.values()));
         }
-
-        let btPeripheral = {connected: false, peripheral: peripheral} as BtCounterPeripheral;
-
-        peripherals.set(peripheral.id, btPeripheral);
-        setList(Array.from(peripherals.values()));
-    }
+    };
 
     const testPeripheral = (peripheral: BtCounterPeripheral) => {
         const id = peripheral.peripheral.id;
