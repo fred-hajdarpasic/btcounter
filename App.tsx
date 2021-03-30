@@ -132,8 +132,15 @@ const App = () => {
     };
 
     const onStartScan = useCallback(() => {
-        peripherals.clear();
-        setList([]);
+        (async () => {
+            peripherals.forEach(async peripheral => {
+                if(peripheral.connected) {
+                    await disconnect(peripheral);
+                }
+            });
+            peripherals.clear();
+            setList([]);
+            })();
     }, []);
 
     const [setIsScanInProgress, startScan, stopScan, ScanButton] = useScanning(onStartScan);
@@ -174,7 +181,8 @@ const App = () => {
                 const handleUpdateValueForCharacteristic = (data: any) => {
                     console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
                     if (data.value[0]) {
-                        setNowCount(nowCount + 1);
+                        console.log(`Inncrement (timer) the value for nowCount by 1 (${nowCount})`);
+                        setTimeout(() => {setNowCount(nowCount + 1);}, 200);
                     }
                 }
 
