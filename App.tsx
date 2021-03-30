@@ -50,25 +50,50 @@ const App = () => {
     };
 
     const startNotification = async (id: string) => {
-        await BleManager.startNotification(id, 'FFE0', 'FFE1')
-            .then(() => {
-                console.log("Notification started");
-            })
-            .catch((error) => {
-                console.log(error);
-        });
+        try {
+            await BleManager.startNotification(id, 'FFE0', 'FFE1');
+            console.log("Notification started");
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     const stopNotification = async (id: string) => {
-        await BleManager.stopNotification(id, 'FFE0', 'FFE1')
-            .then(() => {
-                console.log("Notification stopped");
-            })
-            .catch((error) => {
-                console.log(error);
-        });
+        try {
+            await BleManager.stopNotification(id, 'FFE0', 'FFE1');
+            console.log("Notification stopped");
+        } catch (error) {
+            console.log(error);
+        }
     };
 
+    const connect = async (peripheral: BtCounterPeripheral) => {
+        const id = peripheral.peripheral.id;
+        console.log('Connecting to ' + id);
+        await BleManager.connect(id);
+        console.log('Connected to ' + id);
+        await timeout(100);
+        /* Test read current RSSI value */
+        console.log('Getting services for ' + id);
+        await retrieveServices(id);
+        // await retrieveRssi(id, p);
+        console.log('Got services for ' + id);
+
+        console.log('Start notification for ' + id);
+        await startNotification(id);
+        peripheral.connected = true;
+        console.log('Connected to ' + id);
+    };
+
+    const disconnect = async (peripheral: BtCounterPeripheral) => {
+        const id = peripheral.peripheral.id;
+        console.log('Disconnecting from ' + id);
+        await stopNotification(id);
+        await BleManager.disconnect(id);
+        peripheral.connected = false;
+        console.log('Disconnected from ' + id);
+    };
+    
     const retrieveConnected = () => {
         BleManager.getConnectedPeripherals([]).then((results) => {
             if (results.length == 0) {
@@ -87,32 +112,15 @@ const App = () => {
         });
     }
 
-    const testPeripheral = (peripheral: BtCounterPeripheral) => {
+    const toggleConnection = (peripheral: BtCounterPeripheral) => {
         (async () => {
             const id = peripheral.peripheral.id;
-            console.log('testPeripheral ' + id);
+            console.log(`peripheral = ${JSON.stringify(peripheral)}`);
             if (peripheral) {
                 if (peripheral.connected) {
-                    console.log('Disconnecting from ' + id);
-                    await stopNotification(id);
-                    await BleManager.disconnect(id);
-                    peripheral.connected = false;
-                    console.log('Disconnected from ' + id);
+                    await disconnect(peripheral);
                 } else {
-                    try {
-                        console.log('Connecting to ' + id);
-                        await BleManager.connect(id);
-                        await timeout(100);
-                        /* Test read current RSSI value */
-                        await retrieveServices(id);
-                        // await retrieveRssi(id, p);
-    
-                        await startNotification(id);
-                        peripheral.connected = true;
-                        console.log('Connected to ' + id);
-                    } catch (error) {
-                        console.log('Connection error', error);
-                    }
+                    await connect(peripheral);
                 }
                 let p = peripherals.get(id);
                 if (p) {
@@ -124,28 +132,33 @@ const App = () => {
     };
 
     const [handleStopScan, startScan, stopScan, ScanButton] = useScanning(() => {
+        peripherals.clear();
         setList([]);
     });
+
     useEffect(() => {
         (async () => {
             try {
                 console.log('BT Counter initialisation ... Started');
                 await BleManager.start({ showAlert: false });
-        
+
                 const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-                    (async () => {
-                        if (peripheral.name === 'CC2650 SensorTag') {
-                            console.log('Got SensorTag', peripheral);
+                    if (peripheral.name === 'CC2650 SensorTag') {
+                        console.log(`Got SensorTag: ${peripheral.id}`);
+                        if(!peripherals.get(peripheral.id)) {
+                            console.log(`Adding SensorTag: ${peripheral.id}`);
                             let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
                             peripherals.set(peripheral.id, btPeripheral);
                             stopScan();
                             setList(Array.from(peripherals.values()));
                         } else {
-                            // console.log('Not SensorTag - ignoring');
+                            console.log(`SensorTag: id = ${peripheral.id} already in the list.`);
                         }
-                    })();
+                    } else {
+                        console.log('Not SensorTag - ignoring');
+                    }
                 };
-            
+
                 const handleDisconnectedPeripheral = (data: any) => {
                     let peripheral = peripherals.get(data.peripheral);
                     if (peripheral) {
@@ -155,19 +168,19 @@ const App = () => {
                     }
                     console.log('Disconnected from ' + data.peripheral);
                 };
-            
+
                 const handleUpdateValueForCharacteristic = (data: any) => {
                     console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
                     if (data.value[0]) {
                         setNowCount(nowCount + 1);
                     }
                 }
-            
+
                 bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
                 bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
                 bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
                 bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
-        
+
                 if (Platform.OS === 'android' && Platform.Version >= 23) {
                     PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
                         if (result) {
@@ -184,7 +197,7 @@ const App = () => {
                     });
                 }
                 console.log('BT Counter initialisation ... Completed');
-        
+
                 return (() => {
                     bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
                     bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
@@ -200,7 +213,7 @@ const App = () => {
         // console.log(`item=${JSON.stringify(item)}`);
         const color = item.connected ? 'green' : '#fff';
         return (
-            <TouchableHighlight onPress={() => testPeripheral(item)} key={item.peripheral.id}>
+            <TouchableHighlight onPress={() => toggleConnection(item)} key={item.peripheral.id}>
                 <View style={[styles.row, { backgroundColor: color }]}>
                     <Text style={{ fontSize: 12, textAlign: 'center', color: '#333333', padding: 10 }}>{item.peripheral.name}</Text>
                     <Text style={{ fontSize: 10, textAlign: 'center', color: '#333333', padding: 2 }}>RSSI: {item.peripheral.rssi}</Text>
@@ -239,11 +252,11 @@ const App = () => {
                 />
                 <View style={{ margin: 10, flexDirection: "row", justifyContent: 'space-between' }}>
                     <TouchableHighlight>
-                        <Button title="Start" onPress={() => { setCollecting(true)}}/>
+                        <Button title="Start" onPress={() => { setCollecting(true) }} />
                     </TouchableHighlight>
                     <TextInput style={{ backgroundColor: "red", flex: 0.5 }}>{nowCount}</TextInput>
                     <TouchableHighlight>
-                        <Button title="Stop" onPress={() => setCollecting(false)}/>
+                        <Button title="Stop" onPress={() => setCollecting(false)} />
                     </TouchableHighlight>
                 </View>
             </SafeAreaView>

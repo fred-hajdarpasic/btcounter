@@ -10,34 +10,30 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => vo
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
 
     const startScan = () => {
-        if (!isScanInProgress) {
-            onStartScan();
-            setIsScanInProgress(true);
-            setIsScanTransitioning(true);
-            console.log('Initiating Scanning...');
-            BleManager.scan([], 20, true).then(() => {
-                console.log('Peripheral started scanning...');
-            }).catch(err => {
-                console.error(err);
-            });
+        onStartScan();
+        setIsScanInProgress(true);
+        setIsScanTransitioning(true);
+        console.log('Initiating Scanning...');
+        BleManager.scan([], 20, true).then(() => {
+            console.log('Peripheral started scanning...');
             setIsScanTransitioning(false);
-        } else {
-            console.log('This is wrong - it is already scanning ...');
-        }
+        }).catch(err => {
+            setIsScanTransitioning(false);
+            console.error(err);
+        });
     };
 
     const stopScan = () => {
-        if (isScanInProgress) {
-            setIsScanInProgress(false);
-            setIsScanTransitioning(true);
-            console.log('Stopping Scanning...');
-            BleManager.stopScan().then(() => {
-                console.log('Peripheral stopped scanning...');
-            }).catch(err => {
-                console.error(err);
-            });
+        setIsScanInProgress(false);
+        setIsScanTransitioning(true);
+        console.log('Stopping Scanning...');
+        BleManager.stopScan().then(() => {
+            console.log('Peripheral stopped scanning...');
             setIsScanTransitioning(false);
-        }
+        }).catch(err => {
+            setIsScanTransitioning(false);
+            console.error(err);
+        });
     };
 
     const handleStopScan = () => {
