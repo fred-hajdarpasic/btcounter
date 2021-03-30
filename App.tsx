@@ -183,7 +183,7 @@ const App = () => {
         // console.log(`item=${JSON.stringify(item)}`);
         const color = item.connected ? 'green' : '#fff';
         return (
-            <TouchableHighlight onPress={() => testPeripheral(item)}>
+            <TouchableHighlight onPress={() => testPeripheral(item)} key={item.peripheral.id}>
                 <View style={[styles.row, { backgroundColor: color }]}>
                     <Text style={{ fontSize: 12, textAlign: 'center', color: '#333333', padding: 10 }}>{item.peripheral.name}</Text>
                     <Text style={{ fontSize: 10, textAlign: 'center', color: '#333333', padding: 2 }}>RSSI: {item.peripheral.rssi}</Text>
