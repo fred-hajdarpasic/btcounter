@@ -46,7 +46,7 @@ const App = () => {
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
-        console.log('Retrieved peripheral services', peripheralData);
+        console.log('Retrieved peripheral services', JSON.stringify(peripheralData));
     };
     
     const retrieveRssi = async (id: string, p: BtCounterPeripheral | undefined): Promise<void> => {
@@ -137,42 +137,15 @@ const App = () => {
                     await timeout(100);
                     /* Test read current RSSI value */
                     await retrieveServices(id);
-                    await retrieveRssi(id, p);
-                
-                    // Test using bleno's pizza example
-                    // https://github.com/sandeepmistry/bleno/tree/master/examples/pizza
-                    /*
-                    BleManager.retrieveServices(peripheral.id).then((peripheralInfo) => {
-                        console.log(peripheralInfo);
-                        var service = '13333333-3333-3333-3333-333333333337';
-                        var bakeCharacteristic = '13333333-3333-3333-3333-333333330003';
-                        var crustCharacteristic = '13333333-3333-3333-3333-333333330001';
-        
-                        setTimeout(() => {
-                        BleManager.startNotification(peripheral.id, service, bakeCharacteristic).then(() => {
-                            console.log('Started notification on ' + peripheral.id);
-                            setTimeout(() => {
-                            BleManager.write(peripheral.id, service, crustCharacteristic, [0]).then(() => {
-                                console.log('Writed NORMAL crust');
-                                BleManager.write(peripheral.id, service, bakeCharacteristic, [1,95]).then(() => {
-                                console.log('Writed 351 temperature, the pizza should be BAKED');
-                                
-                                //var PizzaBakeResult = {
-                                //  HALF_BAKED: 0,
-                                //  BAKED:      1,
-                                //  CRISPY:     2,
-                                //  BURNT:      3,
-                                //  ON_FIRE:    4
-                                //};
-                                });
-                            });
-        
-                            }, 500);
-                        }).catch((error) => {
-                            console.log('Notification error', error);
+                    // await retrieveRssi(id, p);
+                    
+                    BleManager.startNotification(id, 'FFE0', 'FFE1')
+                        .then(() => {
+                          console.log("Notification started");
+                        })
+                        .catch((error) => {
+                          console.log(error);
                         });
-                        }, 200);
-                    });*/
                 } catch (error) {
                     console.log('Connection error', error);
                 }
