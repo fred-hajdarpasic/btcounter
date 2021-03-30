@@ -11,6 +11,7 @@ import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 import BleManager from 'react-native-ble-manager';
 import { Peripheral } from 'react-native-ble-manager';
+import useScanning from './useScanning';
 const BleManagerModule = NativeModules.BleManager;
 const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
@@ -27,8 +28,6 @@ const timeout = (ms: number): Promise<void> => {
 }
 
 const App = () => {
-    const [isScanInProgress, setIsScanInProgress] = useState(false);
-    const [isScanTransitioning, setIsScanTransitioning] = useState(false);
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
     const [isCollecting, setCollecting] = useState(false);
@@ -69,47 +68,6 @@ const App = () => {
                 console.log(error);
         });
     };
-
-    const startScan = () => {
-        if (!isScanInProgress) {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            setIsScanInProgress(true);
-            setIsScanTransitioning(true);
-            console.log('Initiating Scanning...');
-            setList([]);
-            BleManager.scan([], 20, true).then(() => {
-                console.log('Peripheral started scanning...');
-            }).catch(err => {
-                console.error(err);
-            });
-            setIsScanTransitioning(false);
-        } else {
-            console.log('This is wrong - it is already scanning ...');
-        }
-    };
-
-    const stopScan = () => {
-        if (isScanInProgress) {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            setIsScanInProgress(false);
-            setIsScanTransitioning(true);
-            console.log('Stopping Scanning...');
-            setList([]);
-            BleManager.stopScan().then(() => {
-                console.log('Peripheral stopped scanning...');
-            }).catch(err => {
-                console.error(err);
-            });
-            setIsScanTransitioning(false);
-        } else {
-            console.log('This is wrong - it is not scanning ...');
-        }
-    };
-
-    const handleStopScan = () => {
-        console.log(`Scan is stopped. isScanInProgress = ${isScanInProgress}`);
-       setIsScanInProgress(false);
-    }
 
     const retrieveConnected = () => {
         BleManager.getConnectedPeripherals([]).then((results) => {
@@ -165,6 +123,9 @@ const App = () => {
         })();
     };
 
+    const [handleStopScan, startScan, stopScan, ScanButton] = useScanning(() => {
+        setList([]);
+    });
     useEffect(() => {
         (async () => {
             try {
@@ -177,8 +138,7 @@ const App = () => {
                             console.log('Got SensorTag', peripheral);
                             let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
                             peripherals.set(peripheral.id, btPeripheral);
-                            await BleManager.stopScan();
-                            setIsScanInProgress(false);
+                            stopScan();
                             setList(Array.from(peripherals.values()));
                         } else {
                             // console.log('Not SensorTag - ignoring');
@@ -258,12 +218,7 @@ const App = () => {
                     contentInsetAdjustmentBehavior="automatic"
                     style={styles.scrollView}>
                     <View style={styles.body}>
-                        <View style={{ margin: 10 }}>
-                            <Button disabled={isScanTransitioning} color={!isScanInProgress ? '#2196F3' : '#f194ff'}
-                                title={!isScanInProgress ? 'Scan Bluetooth' : 'Stop Scanning' }
-                                onPress={() => !isScanInProgress ? startScan() : stopScan() }
-                            />
-                        </View>
+                        <ScanButton />
 
                         <View style={{ margin: 10 }}>
                             <Button title="Retrieve connected peripherals" onPress={() => retrieveConnected()} />
