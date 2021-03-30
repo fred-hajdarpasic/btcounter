@@ -27,7 +27,8 @@ const timeout = (ms: number): Promise<void> => {
 }
 
 const App = () => {
-    const [isScanning, setIsScanning] = useState(false);
+    const [isScanInProgress, setIsScanInProgress] = useState(false);
+    const [isScanTransitioning, setIsScanTransitioning] = useState(false);
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
     const [isCollecting, setCollecting] = useState(false);
@@ -70,31 +71,50 @@ const App = () => {
     };
 
     const startScan = () => {
-        if (!isScanning) {
+        if (!isScanInProgress) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            setIsScanning(true);
+            setIsScanInProgress(true);
+            setIsScanTransitioning(true);
             console.log('Initiating Scanning...');
             setList([]);
             BleManager.scan([], 20, true).then(() => {
-                console.log('Started Scanning...');
+                console.log('Peripheral started scanning...');
             }).catch(err => {
-                setIsScanning(false);
                 console.error(err);
             });
+            setIsScanTransitioning(false);
         } else {
             console.log('This is wrong - it is already scanning ...');
         }
-    }
+    };
+
+    const stopScan = () => {
+        if (isScanInProgress) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            setIsScanInProgress(false);
+            setIsScanTransitioning(true);
+            console.log('Stopping Scanning...');
+            setList([]);
+            BleManager.stopScan().then(() => {
+                console.log('Peripheral stopped scanning...');
+            }).catch(err => {
+                console.error(err);
+            });
+            setIsScanTransitioning(false);
+        } else {
+            console.log('This is wrong - it is not scanning ...');
+        }
+    };
 
     const handleStopScan = () => {
-        console.log(`Scan is stopped. isScanning = ${isScanning}`);
-        setIsScanning(false);
+        console.log(`Scan is stopped. isScanInProgress = ${isScanInProgress}`);
+       setIsScanInProgress(false);
     }
 
     const retrieveConnected = () => {
         BleManager.getConnectedPeripherals([]).then((results) => {
             if (results.length == 0) {
-                console.log('No connected peripherals')
+                console.log('No connected peripherals');
             }
             console.log(results);
             for (var i = 0; i < results.length; i++) {
@@ -158,10 +178,10 @@ const App = () => {
                             let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
                             peripherals.set(peripheral.id, btPeripheral);
                             await BleManager.stopScan();
-                            setIsScanning(false);
+                            setIsScanInProgress(false);
                             setList(Array.from(peripherals.values()));
                         } else {
-                            console.log('Not SensorTag - ignoring');
+                            // console.log('Not SensorTag - ignoring');
                         }
                     })();
                 };
@@ -239,9 +259,9 @@ const App = () => {
                     style={styles.scrollView}>
                     <View style={styles.body}>
                         <View style={{ margin: 10 }}>
-                            <Button color={!isScanning ? 'blue' : 'pink'}
-                                title={!isScanning ? 'Scan Bluetooth' : 'Stop Scanning' }
-                                onPress={() => !isScanning ? startScan() : undefined }
+                            <Button disabled={isScanTransitioning} color={!isScanInProgress ? '#2196F3' : '#f194ff'}
+                                title={!isScanInProgress ? 'Scan Bluetooth' : 'Stop Scanning' }
+                                onPress={() => !isScanInProgress ? startScan() : stopScan() }
                             />
                         </View>
 
