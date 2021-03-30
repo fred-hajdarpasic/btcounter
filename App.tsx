@@ -4,7 +4,7 @@
 /* eslint-disable quotes */
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable prettier/prettier */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView, StyleSheet, ScrollView, View, Text, StatusBar, NativeModules, NativeEventEmitter, Button, Platform, PermissionsAndroid, FlatList, TouchableHighlight, TextInput } from 'react-native';
 
 import { Colors } from 'react-native/Libraries/NewAppScreen';
@@ -131,10 +131,12 @@ const App = () => {
         })();
     };
 
-    const [handleStopScan, startScan, stopScan, ScanButton] = useScanning(() => {
+    const onStartScan = useCallback(() => {
         peripherals.clear();
         setList([]);
-    });
+    }, []);
+
+    const [setIsScanInProgress, startScan, stopScan, ScanButton] = useScanning(onStartScan);
 
     useEffect(() => {
         (async () => {
@@ -144,18 +146,18 @@ const App = () => {
 
                 const handleDiscoverPeripheral = (peripheral: Peripheral) => {
                     if (peripheral.name === 'CC2650 SensorTag') {
-                        console.log(`Got SensorTag: ${peripheral.id}`);
                         if(!peripherals.get(peripheral.id)) {
+                            console.log(`Got First SensorTag, peripheral: ${JSON.stringify(peripheral)}`);
                             console.log(`Adding SensorTag: ${peripheral.id}`);
                             let btPeripheral = { connected: false, peripheral: peripheral } as BtCounterPeripheral;
                             peripherals.set(peripheral.id, btPeripheral);
                             stopScan();
                             setList(Array.from(peripherals.values()));
                         } else {
-                            console.log(`SensorTag: id = ${peripheral.id} already in the list.`);
+                            // console.log(`SensorTag: id = ${peripheral.id} already in the list.`);
                         }
                     } else {
-                        console.log('Not SensorTag - ignoring');
+                        // console.log('Not SensorTag - ignoring');
                     }
                 };
 
@@ -177,7 +179,7 @@ const App = () => {
                 }
 
                 bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-                bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
+                bleManagerEmitter.addListener('BleManagerStopScan', () => setIsScanInProgress(false));
                 bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
                 bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
 
@@ -199,10 +201,10 @@ const App = () => {
                 console.log('BT Counter initialisation ... Completed');
 
                 return (() => {
-                    bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
-                    bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
-                    bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
-                    bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
+                    // bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+                    // bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
+                    // bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
+                    // bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
                 });
             } catch (error) {
             }

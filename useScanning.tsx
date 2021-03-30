@@ -1,15 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable prettier/prettier */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Button } from 'react-native';
 
 import BleManager from 'react-native-ble-manager';
 
-const useScanning = (onStartScan: () => void): [() => void, () => void, () => void, () => JSX.Element] => {
+const useScanning = (onStartScan: () => void): [React.Dispatch<React.SetStateAction<boolean>>, () => void, () => void, () => JSX.Element] => {
     const [isScanInProgress, setIsScanInProgress] = useState(false);
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
 
-    const startScan = () => {
+    const startScan = useCallback(() => {
         onStartScan();
         setIsScanInProgress(true);
         setIsScanTransitioning(true);
@@ -21,9 +21,9 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => vo
             setIsScanTransitioning(false);
             console.error(err);
         });
-    };
+      }, []);
 
-    const stopScan = () => {
+      const stopScan = useCallback(() => {
         setIsScanInProgress(false);
         setIsScanTransitioning(true);
         console.log('Stopping Scanning...');
@@ -34,12 +34,7 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => vo
             setIsScanTransitioning(false);
             console.error(err);
         });
-    };
-
-    const handleStopScan = () => {
-        console.log(`Scan is stopped. isScanInProgress = ${isScanInProgress}`);
-        setIsScanInProgress(false);
-    };
+      }, []);
 
     useEffect(() => {
         (async () => {
@@ -58,7 +53,7 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => vo
         </View>;
     };
 
-    return [handleStopScan, startScan, stopScan, ScanButton];
+    return [setIsScanInProgress, startScan, stopScan, ScanButton];
 };
 
 export default useScanning;
