@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 /* eslint-disable no-trailing-spaces */
 /* eslint-disable prettier/prettier */
 import React, { useState, useCallback, Dispatch, SetStateAction } from 'react';
@@ -6,6 +7,7 @@ import BleManager from 'react-native-ble-manager';
 import { Peripheral } from 'react-native-ble-manager';
 import useScanning from './useScanning';
 import useInitBle from './useInitBle';
+import { Button, TextInput, TouchableHighlight, View } from 'react-native';
 
 interface BtCounterPeripheral {
     peripheral: Peripheral;
@@ -20,13 +22,13 @@ const timeout = (ms: number): Promise<void> => {
 };
 
 const useUiState = (): [
-        any[], Dispatch<SetStateAction<any[]>>, 
-        boolean, Dispatch<SetStateAction<boolean>>,
-        number, Dispatch<SetStateAction<number>>, 
-        () => JSX.Element, 
-        () => void, 
-        (peripheral: BtCounterPeripheral) => void, 
-        (id: string, p: BtCounterPeripheral | undefined) => Promise<void>] => {
+    any[], Dispatch<SetStateAction<any[]>>,
+    boolean, Dispatch<SetStateAction<boolean>>,
+    () => void,
+    (peripheral: BtCounterPeripheral) => void,
+    (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
+    () => JSX.Element,
+    () => JSX.Element] => {
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
     const [isCollecting, setCollecting] = useState(false);
@@ -92,7 +94,7 @@ const useUiState = (): [
         peripheral.connected = false;
         console.log('Disconnected from ' + id);
     };
-    
+
     const retrieveConnected = () => {
         BleManager.getConnectedPeripherals([]).then((results) => {
             if (results.length === 0) {
@@ -139,8 +141,8 @@ const useUiState = (): [
             });
             peripherals.clear();
             setList([]);
-            })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const [handleStopScan, stopScan, ScanButton] = useScanning(onStartScan);
@@ -160,8 +162,8 @@ const useUiState = (): [
         } else {
             // console.log('Not SensorTag - ignoring');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleDisconnectedPeripheral = useCallback((data: any) => {
         let peripheral = peripherals.get(data.peripheral);
@@ -171,23 +173,37 @@ const useUiState = (): [
             setList(Array.from(peripherals.values()));
         }
         console.log('Disconnected from ' + data.peripheral);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleUpdateValueForCharacteristic = useCallback((data: any) => {
         console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
         if (data.value[0]) {
-            setTimeout(() => {
-                setNowCount(nowCount + 1);
-                console.log(`Inncrement (timer) the value for nowCount by 1 (${nowCount})`);
-            }, 200);
+            setNowCount(nowCount + 1);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useInitBle(handleDiscoverPeripheral, handleDisconnectedPeripheral, handleUpdateValueForCharacteristic, handleStopScan);
 
-    return [list, setList, isCollecting, setCollecting, nowCount, setNowCount, ScanButton, retrieveConnected, toggleConnection, retrieveRssi];
+    const NowCount = (): JSX.Element => {
+        return <View style={{ margin: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+            <TouchableHighlight>
+                <Button title="Start" onPress={() => { setCollecting(true); }} />
+            </TouchableHighlight>
+            <TextInput style={{ backgroundColor: 'red', flex: 0.5 }}>{nowCount}</TextInput>
+            <TouchableHighlight>
+                <Button title="Stop" onPress={() => setCollecting(false)} />
+            </TouchableHighlight>
+        </View>;
+    };
+
+    console.log(`nowCount = ${nowCount}`);
+    return [
+        list, setList, 
+        isCollecting, setCollecting, 
+        retrieveConnected, toggleConnection, retrieveRssi, 
+        ScanButton, NowCount];
 };
 
 export default useUiState;

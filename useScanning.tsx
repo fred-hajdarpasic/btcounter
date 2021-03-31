@@ -67,7 +67,6 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
         </View>;
     };
 
-
     return [handleStopScan, stopScan, ScanButton];
 };
 

@@ -15,7 +15,7 @@ interface BtCounterPeripheral {
 }
 
 const App = () => {
-    const [list, setList, isCollecting, setCollecting, nowCount, setNowCount, ScanButton, retrieveConnected, toggleConnection, retrieveRssi] = useUiState();
+    const [list, setList, isCollecting, setCollecting, retrieveConnected, toggleConnection, retrieveRssi, ScanButton, NowCount] = useUiState();
 
     const renderItem = (item: BtCounterPeripheral) => {
         // console.log(`item=${JSON.stringify(item)}`);
@@ -58,15 +58,7 @@ const App = () => {
                     renderItem={({ item }) => renderItem(item)}
                     keyExtractor={item => item.id}
                 />
-                <View style={{ margin: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <TouchableHighlight>
-                        <Button title="Start" onPress={() => { setCollecting(true); }} />
-                    </TouchableHighlight>
-                    <TextInput style={{ backgroundColor: 'red', flex: 0.5 }}>{nowCount}</TextInput>
-                    <TouchableHighlight>
-                        <Button title="Stop" onPress={() => setCollecting(false)} />
-                    </TouchableHighlight>
-                </View>
+                <NowCount />
             </SafeAreaView>
         </>
     );
