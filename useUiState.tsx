@@ -8,6 +8,9 @@ import { Peripheral } from 'react-native-ble-manager';
 import useScanning from './useScanning';
 import useInitBle from './useInitBle';
 import { Button, TextInput, TouchableHighlight, View } from 'react-native';
+import useNumberMemo from './useNumberMemo';
+import useTimer from './useTimer';
+import useBooleanMemo from './useBooleanMemo';
 
 interface BtCounterPeripheral {
     peripheral: Peripheral;
@@ -23,7 +26,7 @@ const timeout = (ms: number): Promise<void> => {
 
 const useUiState = (): [
     any[], Dispatch<SetStateAction<any[]>>,
-    boolean, Dispatch<SetStateAction<boolean>>,
+    () => boolean, (b: boolean) => void,
     () => void,
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
@@ -31,26 +34,11 @@ const useUiState = (): [
     () => JSX.Element] => {
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
-    const [isCollecting, setCollecting] = useState(false);
+    const [isCollecting, setCollecting] = useBooleanMemo(false);
 
-    const [getNowCount, setNowCount] = React.useMemo(() => {
-        let counter = 0;
-        return [() => counter,
-            (newValue: number) => {
-                console.log('Setting counter');
-                counter = newValue;
-            }];
-    }, []);
-
+    const [getNowCount, setNowCount] = useNumberMemo(0);
     const [force, setForce] = useState(false);
-    React.useEffect(() => {
-        let timerid = setInterval(() => {
-            setForce(!force);
-        }, 500);
-        return () => {
-            clearInterval(timerid);
-        };
-    });
+    const [startScreenRefreshTimer, stopScreenRefreshTimer] = useTimer(1000, () => { setForce(!force); });
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
@@ -196,7 +184,7 @@ const useUiState = (): [
 
     const handleUpdateValueForCharacteristic = useCallback((data: any) => {
         console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
-        if (data.value[0]) {
+        if (data.value[0] && isCollecting()) {
             setNowCount(getNowCount() + 1);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -204,6 +192,16 @@ const useUiState = (): [
 
     useInitBle(handleDiscoverPeripheral, handleDisconnectedPeripheral, handleUpdateValueForCharacteristic, handleStopScan);
 
+    console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
+
+    React.useEffect(() => {
+        if (isCollecting()) {
+            startScreenRefreshTimer();
+        } else {
+            stopScreenRefreshTimer();
+        }
+    }, [isCollecting]);
+    
     const NowCount = (): JSX.Element => {
         return <View style={{ margin: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
             <TouchableHighlight>

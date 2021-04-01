@@ -4,18 +4,30 @@ import React, { useState, useCallback } from 'react';
 import { View, Button } from 'react-native';
 
 import BleManager from 'react-native-ble-manager';
+import useNumberMemo from './useNumberMemo';
+import useDownCounterWithTimer from './useDownCounterWithTimer';
 
 const useScanning = (onStartScan: () => void): [() => void, () => void, () => JSX.Element] => {
     const [isScanInProgress, setIsScanInProgress] = useState(false);
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
     const [duration, setDuration] = useState(20);
-    const [counter, setCounter] = useState(20);
+    const [getCountValue, startDownCounter, stopDownCounter] = useDownCounterWithTimer(duration, 1000);
+ 
+     const [force, setForce] = useState(false);
+     React.useEffect(() => {
+        let timerid = setInterval(() => {
+            setForce(!force);
+        }, 500);
+        return () => {
+            clearInterval(timerid);
+        };
+    });
 
     const startScan = useCallback(() => {
+        startDownCounter();
         onStartScan();
         setIsScanInProgress(true);
         setIsScanTransitioning(true);
-        setCounter(duration);
         console.log('Initiating Scanning...');
         BleManager.scan([], duration, true).then(() => {
             console.log('Peripheral started scanning...');
@@ -28,6 +40,7 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
       }, []);
 
       const stopScan = useCallback(() => {
+        stopDownCounter();
         setIsScanInProgress(false);
         setIsScanTransitioning(true);
         console.log('Stopping Scanning...');
@@ -43,25 +56,14 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
     const handleStopScan = useCallback(() => {
         console.log('Stopped scanning');
         setIsScanInProgress(false);
+        stopDownCounter();
     },[]);
 
-    React.useEffect(() => {
-//        console.log('Init timer.');
-        let timerid = setInterval(() => {
-            if (counter > 0) {
-                setCounter(counter - 1);
-            }
-        }, 1000);
-        return () => {
-            // console.log('Cleanup');
-            clearInterval(timerid);
-        };
-    });
-
+    // console.log(`Scanning render ${getCountValue()}`);
     const ScanButton = (): JSX.Element => {
         return <View style={{ margin: 10 }}>
             <Button disabled={isScanTransitioning} color={!isScanInProgress ? '#2196F3' : '#f194ff'}
-                title={!isScanInProgress ? 'Scan Bluetooth' : `Stop Scanning (${counter})`}
+                title={!isScanInProgress ? 'Scan Bluetooth' : `Stop Scanning (${getCountValue()}) -${force}`}
                 onPress={() => !isScanInProgress ? startScan() : stopScan()}
             />
         </View>;
