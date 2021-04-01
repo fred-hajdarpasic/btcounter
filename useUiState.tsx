@@ -32,7 +32,25 @@ const useUiState = (): [
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
     const [isCollecting, setCollecting] = useState(false);
-    const [nowCount, setNowCount] = useState(0);
+
+    const [getNowCount, setNowCount] = React.useMemo(() => {
+        let counter = 0;
+        return [() => counter,
+            (newValue: number) => {
+                console.log('Setting counter');
+                counter = newValue;
+            }];
+    }, []);
+
+    const [force, setForce] = useState(false);
+    React.useEffect(() => {
+        let timerid = setInterval(() => {
+            setForce(!force);
+        }, 500);
+        return () => {
+            clearInterval(timerid);
+        };
+    });
 
     const retrieveServices = async (id: string) => {
         let peripheralData = await BleManager.retrieveServices(id);
@@ -179,7 +197,7 @@ const useUiState = (): [
     const handleUpdateValueForCharacteristic = useCallback((data: any) => {
         console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
         if (data.value[0]) {
-            setNowCount(nowCount + 1);
+            setNowCount(getNowCount() + 1);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -189,16 +207,15 @@ const useUiState = (): [
     const NowCount = (): JSX.Element => {
         return <View style={{ margin: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
             <TouchableHighlight>
-                <Button title="Start" onPress={() => { setCollecting(true); }} />
+                <Button title={`Start ${force ? '<' : '>'}`} onPress={() => { setCollecting(true); }} />
             </TouchableHighlight>
-            <TextInput style={{ backgroundColor: 'red', flex: 0.5 }}>{nowCount}</TextInput>
+            <TextInput style={{ backgroundColor: 'red', flex: 0.5 }}>{getNowCount()}</TextInput>
             <TouchableHighlight>
                 <Button title="Stop" onPress={() => setCollecting(false)} />
             </TouchableHighlight>
         </View>;
     };
 
-    console.log(`nowCount = ${nowCount}`);
     return [
         list, setList, 
         isCollecting, setCollecting, 
