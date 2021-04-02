@@ -192,7 +192,7 @@ const useUiState = (): [
 
     useInitBle(handleDiscoverPeripheral, handleDisconnectedPeripheral, handleUpdateValueForCharacteristic, handleStopScan);
 
-    console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
+    // console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
 
     React.useEffect(() => {
         if (isCollecting()) {
@@ -200,6 +200,7 @@ const useUiState = (): [
         } else {
             stopScreenRefreshTimer();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isCollecting]);
     
     const NowCount = (): JSX.Element => {

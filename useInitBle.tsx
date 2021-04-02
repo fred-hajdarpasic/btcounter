@@ -16,7 +16,7 @@ const useInitBle = (
     useEffect(() => {
         (async () => {
             console.log('BT Counter initialisation ... Started');
-            await BleManager.start({ showAlert: false });
+            await BleManager.start({ showAlert: true });
 
             bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
             bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);

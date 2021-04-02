@@ -28,7 +28,7 @@ const useDownCounterWithTimer = (initialValue: number, interval: number):
         };
 
         const stopTimer = () => {
-            console.log('Down timer cleanup');
+            // console.log('Down timer cleanup');
             clearInterval(timerId);
         };
 
