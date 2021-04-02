@@ -12,6 +12,7 @@ import PeripheralDetails from './PeripheralDetails';
 import TotalCount from './TotalCount';
 import MostRecent from './MostRecent';
 import {subDays} from 'date-fns';
+import Pause from './Pause';
 
 const App = () => {
     const [totalCount, setTotalCount] = React.useState(5000);
@@ -32,6 +33,8 @@ const App = () => {
         setList,
         isCollecting,
         setCollecting,
+        isPaused,
+        setIsPaused,
         retrieveConnected,
         toggleConnection,
         retrieveRssi,
@@ -81,6 +84,13 @@ const App = () => {
                     <TotalCount totalCount={totalCount} />
                     <MostRecent mostRecentCount={mostRecentCount} date={mostRecentCountDate} />
                     <NowCount />
+                    <Pause
+                        disabled={!isCollecting()}
+                        paused={isPaused()}
+                        onPausePressed={() => {
+                            setIsPaused(!isPaused());
+                        }}
+                    />
                 </View>
             </SafeAreaView>
         </>

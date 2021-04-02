@@ -28,6 +28,8 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
     Dispatch<SetStateAction<any[]>>,
     () => boolean,
     (b: boolean) => void,
+    () => boolean,
+    (b: boolean) => void,
     () => void,
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
@@ -37,6 +39,7 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
     const [isCollecting, setCollecting] = useBooleanMemo(false);
+    const [isPaused, setIsPaused] = useBooleanMemo(false);
 
     const [getNowCount, setNowCount] = useNumberMemo(0);
     const [force, setForce] = useState(false);
@@ -193,7 +196,7 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
             'Received data from ' + data.peripheral + ' characteristic ' + data.characteristic,
             data.value,
         );
-        if (data.value[0] && isCollecting()) {
+        if (data.value[0] && isCollecting() && !isPaused()) {
             setNowCount(getNowCount() + 1);
             RNBeep.beep();
         }
@@ -210,7 +213,7 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
     // console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
 
     React.useEffect(() => {
-        if (isCollecting()) {
+        if (isCollecting() && !isPaused()) {
             startScreenRefreshTimer();
         } else {
             stopScreenRefreshTimer();
@@ -239,6 +242,8 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
         setList,
         isCollecting,
         setCollecting,
+        isPaused,
+        setIsPaused,
         retrieveConnected,
         toggleConnection,
         retrieveRssi,
