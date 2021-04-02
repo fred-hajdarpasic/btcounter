@@ -2,12 +2,25 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable prettier/prettier */
 import React from 'react';
-import { SafeAreaView, StyleSheet, ScrollView, View, Text, StatusBar, FlatList, TouchableHighlight, TextInput, Button } from 'react-native';
+import {
+    SafeAreaView,
+    StyleSheet,
+    ScrollView,
+    View,
+    Text,
+    StatusBar,
+    FlatList,
+    TouchableHighlight,
+    TextInput,
+    Button,
+} from 'react-native';
 
-import { Colors } from 'react-native/Libraries/NewAppScreen';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
 
-import { Peripheral } from 'react-native-ble-manager';
+import {Peripheral} from 'react-native-ble-manager';
 import useUiState from './useUiState';
+import useConnected from './useConnected';
+import useMyMemo from './useMyMemo';
 
 interface BtCounterPeripheral {
     peripheral: Peripheral;
@@ -15,17 +28,62 @@ interface BtCounterPeripheral {
 }
 
 const App = () => {
-    const [list, setList, isCollecting, setCollecting, retrieveConnected, toggleConnection, retrieveRssi, ScanButton, NowCount] = useUiState();
-
+    const [getSelectedPeripheralId, setSelectedPeripheralId] = useMyMemo('');
+    const [
+        list,
+        setList,
+        isCollecting,
+        setCollecting,
+        retrieveConnected,
+        toggleConnection,
+        retrieveRssi,
+        ScanButton,
+        NowCount,
+    ] = useUiState();
+    const [ConnectionIndicator] = useConnected(getSelectedPeripheralId());
     const renderItem = (item: BtCounterPeripheral) => {
         // console.log(`item=${JSON.stringify(item)}`);
         const color = item.connected ? 'green' : '#fff';
         return (
-            <TouchableHighlight onPress={() => toggleConnection(item)} key={item.peripheral.id}>
-                <View style={[styles.row, { backgroundColor: color }]}>
-                    <Text style={{ fontSize: 12, textAlign: 'center', color: '#333333', padding: 10 }}>{item.peripheral.name}</Text>
-                    <Text style={{ fontSize: 10, textAlign: 'center', color: '#333333', padding: 2 }}>RSSI: {item.peripheral.rssi}</Text>
-                    <Text style={{ fontSize: 8, textAlign: 'center', color: '#333333', padding: 2, paddingBottom: 20 }}>{item.peripheral.id}</Text>
+            <TouchableHighlight
+                onPress={() => {
+                    if (getSelectedPeripheralId()) {
+                        setSelectedPeripheralId('');
+                    } else {
+                        setSelectedPeripheralId(item.peripheral.id);
+                    }
+                    toggleConnection(item);
+                }}
+                key={item.peripheral.id}>
+                <View style={[styles.row, {backgroundColor: color}]}>
+                    <Text
+                        style={{
+                            fontSize: 12,
+                            textAlign: 'center',
+                            color: '#333333',
+                            padding: 10,
+                        }}>
+                        {item.peripheral.name}
+                    </Text>
+                    <Text
+                        style={{
+                            fontSize: 10,
+                            textAlign: 'center',
+                            color: '#333333',
+                            padding: 2,
+                        }}>
+                        RSSI: {item.peripheral.rssi}
+                    </Text>
+                    <Text
+                        style={{
+                            fontSize: 8,
+                            textAlign: 'center',
+                            color: '#333333',
+                            padding: 2,
+                            paddingBottom: 20,
+                        }}>
+                        {item.peripheral.id}
+                    </Text>
                 </View>
             </TouchableHighlight>
         );
@@ -39,23 +97,28 @@ const App = () => {
                     contentInsetAdjustmentBehavior="automatic"
                     style={styles.scrollView}>
                     <View style={styles.body}>
+                        <ConnectionIndicator />
                         <ScanButton />
 
-                        <View style={{ margin: 10 }}>
-                            <Button title="Retrieve connected peripherals" onPress={() => retrieveConnected()} />
+                        <View style={{margin: 10}}>
+                            <Button
+                                title="Retrieve connected peripherals"
+                                onPress={() => retrieveConnected()}
+                            />
                         </View>
 
-                        {(list.length === 0) &&
-                            <View style={{ flex: 1, margin: 20 }}>
-                                <Text style={{ textAlign: 'center' }}>No peripherals</Text>
+                        {list.length === 0 && (
+                            <View style={{flex: 1, margin: 20}}>
+                                <Text style={{textAlign: 'center'}}>
+                                    No peripherals
+                                </Text>
                             </View>
-                        }
-
+                        )}
                     </View>
                 </ScrollView>
                 <FlatList
                     data={list}
-                    renderItem={({ item }) => renderItem(item)}
+                    renderItem={({item}) => renderItem(item)}
                     keyExtractor={item => item.id}
                 />
                 <NowCount />
