@@ -3,6 +3,7 @@ import React, {useState, useCallback, Dispatch, SetStateAction} from 'react';
 
 import BleManager from 'react-native-ble-manager';
 import {Peripheral} from 'react-native-ble-manager';
+import RNBeep from 'react-native-a-beep';
 import useScanning from './useScanning';
 import useInitBle from './useInitBle';
 import useNumberMemo from './useNumberMemo';
@@ -194,6 +195,7 @@ const useUiState = (): [
         );
         if (data.value[0] && isCollecting()) {
             setNowCount(getNowCount() + 1);
+            RNBeep.beep();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
