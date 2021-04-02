@@ -11,10 +11,22 @@ import {styles} from './styles';
 import PeripheralDetails from './PeripheralDetails';
 import TotalCount from './TotalCount';
 import MostRecent from './MostRecent';
-import { subDays } from 'date-fns';
+import {subDays} from 'date-fns';
 
 const App = () => {
+    const [totalCount, setTotalCount] = React.useState(5000);
+    const [mostRecentCount, setMostRecentCount] = React.useState(50);
+    const [mostRecentCountDate, setMostRecentCountDate] = React.useState(new Date());
+
     const [getSelectedPeripheralId, setSelectedPeripheralId] = useMyMemo('');
+
+    const onStopCollecting = React.useCallback((nowCount: number) => {
+        console.log(`nowCount=${nowCount}`);
+        setTotalCount(totalCount + nowCount);
+        setMostRecentCount(nowCount);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const [
         list,
         setList,
@@ -25,10 +37,9 @@ const App = () => {
         retrieveRssi,
         ScanButton,
         NowCount,
-    ] = useUiState();
+    ] = useUiState(onStopCollecting);
     const [ConnectionIndicator] = useConnected(getSelectedPeripheralId());
     const renderItem = (item: BtCounterPeripheral) => {
-        // console.log(`item=${JSON.stringify(item)}`);
         return (
             <PeripheralDetails
                 onPress={() => {
@@ -67,8 +78,8 @@ const App = () => {
             </SafeAreaView>
             <SafeAreaView>
                 <View style={styles.body}>
-                    <TotalCount totalCount={5000} />
-                    <MostRecent mostRecentCount={23} date={subDays(new Date(), 3)} />
+                    <TotalCount totalCount={totalCount} />
+                    <MostRecent mostRecentCount={mostRecentCount} date={mostRecentCountDate} />
                     <NowCount />
                 </View>
             </SafeAreaView>

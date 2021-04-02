@@ -11,7 +11,6 @@ export interface MostRecentProps {
 }
 
 const MostRecent = (props: MostRecentProps): JSX.Element => {
-    console.log(`most revent value = ${props.mostRecentCount}`);
     return (
         <View>
             <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>

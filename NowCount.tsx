@@ -7,7 +7,7 @@ import { Button, Text, TouchableHighlight, View } from 'react-native';
 export interface NowCountProps {
     forceRefresh: boolean;
     onStartCollecting: () => void;
-    onStopCollecting: () => void;
+    onStopCollecting: (nowCount: number) => void;
     nowCount: number;
     started: boolean;
 }
@@ -35,7 +35,7 @@ const NowCount = (props: NowCountProps): JSX.Element => {
                 <Text style={{ textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow:1}} />
                 <TouchableHighlight style={{flexGrow:5}}>
                     <Button disabled={!props.started} title="Stop" onPress={() => {
-                        props.onStopCollecting();
+                        props.onStopCollecting(props.nowCount);
                     }} />
                 </TouchableHighlight>
             </View>

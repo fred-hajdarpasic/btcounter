@@ -23,7 +23,7 @@ const timeout = (ms: number): Promise<void> => {
     });
 };
 
-const useUiState = (): [
+const useUiState = (onStopCollecting: (nowCount: number) => void): [
     any[],
     Dispatch<SetStateAction<any[]>>,
     () => boolean,
@@ -226,7 +226,10 @@ const useUiState = (): [
                 onStartCollecting={() => {
                     setCollecting(true);
                 }}
-                onStopCollecting={() => setCollecting(false)}
+                onStopCollecting={(nowCount: number) => {
+                    setCollecting(false);
+                    onStopCollecting(nowCount);
+                }}
             />
         );
     };
