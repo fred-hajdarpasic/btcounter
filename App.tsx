@@ -14,6 +14,7 @@ import MostRecent from './MostRecent';
 import {subDays} from 'date-fns';
 import Pause from './Pause';
 import ClearTotalAndHelp from './ClearTotalAndHelp';
+import {AsyncStorage} from 'react-native';
 
 const App = () => {
     const [totalCount, setTotalCount] = React.useState(10);
@@ -30,10 +31,18 @@ const App = () => {
 
     const onStopCollecting = React.useCallback(
         (nowCount: number) => {
-            console.log(`totalCount = ${totalCount}, nowCount=${nowCount}`);
-            setTotalCount(totalCount + nowCount);
+            const newTotalCount: number = totalCount + nowCount;
+            console.log(`newTotalCount = ${newTotalCount}, nowCount=${nowCount}`);
+            setTotalCount(newTotalCount);
             setMostRecentCount(nowCount);
+            setMostRecentCountDate(new Date());
             setIsPaused(false);
+
+            (async () => {
+                await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
+                await AsyncStorage.setItem('mostRecentCount', `${mostRecentCount}`);
+                await AsyncStorage.setItem('mostRecentCountDate', `${mostRecentCountDate}`);
+            })();
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [totalCount],
@@ -70,6 +79,32 @@ const App = () => {
             />
         );
     };
+
+    React.useEffect(() => {
+        (async () => {
+            const totalCountFromDb = await AsyncStorage.getItem('totalCount');
+            if (totalCountFromDb) {
+                console.log(`Read totalCount from storage: ${totalCountFromDb}`);
+                setTotalCount(Number.parseFloat(totalCountFromDb));
+            } else {
+                setTotalCount(0);
+            }
+            const mostRecentCountFromDb = await AsyncStorage.getItem('mostRecentCount');
+            if (mostRecentCountFromDb) {
+                console.log(`Read mostRecentCount from storage: ${mostRecentCountFromDb}`);
+                setMostRecentCount(Number.parseFloat(mostRecentCountFromDb));
+            } else {
+                setMostRecentCount(0);
+            }
+            const mostRecentCountDateFromDb = await AsyncStorage.getItem('mostRecentCountDate');
+            if (mostRecentCountDateFromDb) {
+                console.log(`Read mostRecentCountDate from storage: ${mostRecentCountDateFromDb}`);
+                setMostRecentCountDate(new Date(mostRecentCountDateFromDb));
+            } else {
+                setMostRecentCountDate(new Date());
+            }
+        })();
+    }, []);
 
     return (
         <>
