@@ -23,7 +23,10 @@ const timeout = (ms: number): Promise<void> => {
     });
 };
 
-const useUiState = (onStopCollecting: (nowCount: number) => void): [
+const useUiState = (
+    onStartCollecting: () => void,
+    onStopCollecting: (nowCount: number) => void,
+): [
     any[],
     Dispatch<SetStateAction<any[]>>,
     () => boolean,
@@ -34,7 +37,7 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
     () => JSX.Element,
-    () => JSX.Element,
+    (props: {disabled: boolean}) => JSX.Element,
 ] => {
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
@@ -192,12 +195,11 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
     }, []);
 
     const handleUpdateValueForCharacteristic = useCallback((data: any) => {
-        console.log(
-            'Received data from ' + data.peripheral + ' characteristic ' + data.characteristic,
-            data.value,
-        );
+        console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
         if (data.value[0] && isCollecting() && !isPaused()) {
             setNowCount(getNowCount() + 1);
+        }
+        if (data.value[0] && isCollecting()) {
             RNBeep.beep();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,13 +223,17 @@ const useUiState = (onStopCollecting: (nowCount: number) => void): [
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isCollecting]);
 
-    const NowCountWidget = (): JSX.Element => {
+    const NowCountWidget = (props: {disabled: boolean}): JSX.Element => {
         return (
-            <NowCount started={isCollecting()}
+            <NowCount
+                started={isCollecting()}
+                disabled={props.disabled}
                 forceRefresh={force}
                 nowCount={getNowCount()}
                 onStartCollecting={() => {
+                    setNowCount(0);
                     setCollecting(true);
+                    onStartCollecting();
                 }}
                 onStopCollecting={(nowCount: number) => {
                     setCollecting(false);

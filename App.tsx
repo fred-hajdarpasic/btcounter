@@ -13,20 +13,31 @@ import TotalCount from './TotalCount';
 import MostRecent from './MostRecent';
 import {subDays} from 'date-fns';
 import Pause from './Pause';
+import ClearTotalAndHelp from './ClearTotalAndHelp';
 
 const App = () => {
-    const [totalCount, setTotalCount] = React.useState(5000);
+    const [totalCount, setTotalCount] = React.useState(10);
     const [mostRecentCount, setMostRecentCount] = React.useState(50);
     const [mostRecentCountDate, setMostRecentCountDate] = React.useState(new Date());
+    const [isConnected, setIsCOnnected] = React.useState(false);
 
     const [getSelectedPeripheralId, setSelectedPeripheralId] = useMyMemo('');
 
-    const onStopCollecting = React.useCallback((nowCount: number) => {
-        console.log(`nowCount=${nowCount}`);
-        setTotalCount(totalCount + nowCount);
-        setMostRecentCount(nowCount);
+    const onStartCollecting = React.useCallback(() => {
+        setIsPaused(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const onStopCollecting = React.useCallback(
+        (nowCount: number) => {
+            console.log(`totalCount = ${totalCount}, nowCount=${nowCount}`);
+            setTotalCount(totalCount + nowCount);
+            setMostRecentCount(nowCount);
+            setIsPaused(false);
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [totalCount],
+    );
 
     const [
         list,
@@ -40,21 +51,22 @@ const App = () => {
         retrieveRssi,
         ScanButton,
         NowCount,
-    ] = useUiState(onStopCollecting);
+    ] = useUiState(onStartCollecting, onStopCollecting);
     const [ConnectionIndicator] = useConnected(getSelectedPeripheralId());
-    const renderItem = (item: BtCounterPeripheral) => {
+    const renderItem = (peripheral: BtCounterPeripheral) => {
         return (
             <PeripheralDetails
                 onPress={() => {
                     if (getSelectedPeripheralId()) {
                         setSelectedPeripheralId('');
                     } else {
-                        setSelectedPeripheralId(item.peripheral.id);
+                        setSelectedPeripheralId(peripheral.peripheral.id);
                     }
-                    toggleConnection(item);
+                    toggleConnection(peripheral);
+                    setIsCOnnected(!peripheral.connected);
                 }}
-                item={item}
-                key={item.peripheral.id}
+                item={peripheral}
+                key={peripheral.peripheral.id}
             />
         );
     };
@@ -83,12 +95,17 @@ const App = () => {
                 <View style={styles.body}>
                     <TotalCount totalCount={totalCount} />
                     <MostRecent mostRecentCount={mostRecentCount} date={mostRecentCountDate} />
-                    <NowCount />
+                    <NowCount disabled={!isConnected} />
                     <Pause
-                        disabled={!isCollecting()}
+                        disabled={!isCollecting() || !isConnected}
                         paused={isPaused()}
                         onPausePressed={() => {
                             setIsPaused(!isPaused());
+                        }}
+                    />
+                    <ClearTotalAndHelp
+                        onClearTotalConfirmed={() => {
+                            setTotalCount(0);
                         }}
                     />
                 </View>

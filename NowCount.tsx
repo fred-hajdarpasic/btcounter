@@ -3,6 +3,7 @@
 import React from 'react';
 
 import { Button, Text, TouchableHighlight, View } from 'react-native';
+import Colors from './Colors';
 
 export interface NowCountProps {
     forceRefresh: boolean;
@@ -10,6 +11,7 @@ export interface NowCountProps {
     onStopCollecting: (nowCount: number) => void;
     nowCount: number;
     started: boolean;
+    disabled: boolean;
 }
 
 const NowCount = (props: NowCountProps): JSX.Element => {
@@ -25,7 +27,7 @@ const NowCount = (props: NowCountProps): JSX.Element => {
             </View>
             <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
                 <TouchableHighlight style={{flexGrow:5}}>
-                    <Button disabled={props.started}
+                    <Button disabled={props.started || props.disabled} color={Colors.green}
                         title={`Start ${props.forceRefresh ? '<' : '>'}`}
                         onPress={() => {
                             props.onStartCollecting();
@@ -34,7 +36,7 @@ const NowCount = (props: NowCountProps): JSX.Element => {
                 </TouchableHighlight>
                 <Text style={{ textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow:1}} />
                 <TouchableHighlight style={{flexGrow:5}}>
-                    <Button disabled={!props.started} title="Stop" onPress={() => {
+                    <Button disabled={!props.started || props.disabled} title="Stop" color={Colors.red} onPress={() => {
                         props.onStopCollecting(props.nowCount);
                     }} />
                 </TouchableHighlight>
