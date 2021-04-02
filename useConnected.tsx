@@ -19,7 +19,7 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
         try {
             await BleManager.enableBluetooth();
             setBlIsOn(true);
-            console.log('BLE is on');
+            // console.log('BLE is on');
         } catch (error) {
             console.log(`Error: ${error}`);
             setBlIsOn(false);

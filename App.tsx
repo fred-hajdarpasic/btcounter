@@ -9,6 +9,9 @@ import useMyMemo from './useMyMemo';
 import {BtCounterPeripheral} from './types';
 import {styles} from './styles';
 import PeripheralDetails from './PeripheralDetails';
+import TotalCount from './TotalCount';
+import MostRecent from './MostRecent';
+import { subDays } from 'date-fns';
 
 const App = () => {
     const [getSelectedPeripheralId, setSelectedPeripheralId] = useMyMemo('');
@@ -64,6 +67,8 @@ const App = () => {
             </SafeAreaView>
             <SafeAreaView>
                 <View style={styles.body}>
+                    <TotalCount totalCount={5000} />
+                    <MostRecent mostRecentCount={23} date={subDays(new Date(), 3)} />
                     <NowCount />
                 </View>
             </SafeAreaView>
