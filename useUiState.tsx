@@ -23,6 +23,9 @@ const timeout = (ms: number): Promise<void> => {
     });
 };
 
+const PERIPHERAL_NAME_TO_SEARCH = 'CC2650 SensorTag';
+const NOTIFY_SERVICE_ID = 'FFE0';
+const NOTIFY_CHARACTERISTIC_ID = 'FFE1';
 const useUiState = (
     onStartCollecting: () => void,
     onStopCollecting: (nowCount: number) => void,
@@ -68,7 +71,7 @@ const useUiState = (
 
     const startNotification = async (id: string) => {
         try {
-            await BleManager.startNotification(id, 'FFE0', 'FFE1');
+            await BleManager.startNotification(id, NOTIFY_SERVICE_ID, NOTIFY_CHARACTERISTIC_ID);
             console.log('Notification started');
         } catch (error) {
             console.log(error);
@@ -77,7 +80,7 @@ const useUiState = (
 
     const stopNotification = async (id: string) => {
         try {
-            await BleManager.stopNotification(id, 'FFE0', 'FFE1');
+            await BleManager.stopNotification(id, NOTIFY_SERVICE_ID, NOTIFY_CHARACTERISTIC_ID);
             console.log('Notification stopped');
         } catch (error) {
             console.log(error);
@@ -163,7 +166,7 @@ const useUiState = (
     const [handleStopScan, stopScan, ScanButton] = useScanning(onStartScan);
 
     const handleDiscoverPeripheral = useCallback((peripheral: Peripheral) => {
-        if (peripheral.name === 'CC2650 SensorTag') {
+        if (peripheral.name === PERIPHERAL_NAME_TO_SEARCH) {
             if (!peripherals.get(peripheral.id)) {
                 console.log(`Got First SensorTag, peripheral: ${JSON.stringify(peripheral)}`);
                 console.log(`Adding SensorTag: ${peripheral.id}`);
