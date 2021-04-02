@@ -14,7 +14,7 @@ import MostRecent from './MostRecent';
 import {subDays} from 'date-fns';
 import Pause from './Pause';
 import ClearTotalAndHelp from './ClearTotalAndHelp';
-import {AsyncStorage} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const App = () => {
     const [totalCount, setTotalCount] = React.useState(10);
@@ -31,17 +31,25 @@ const App = () => {
 
     const onStopCollecting = React.useCallback(
         (nowCount: number) => {
+            if (nowCount === 0) {
+                return;
+            }
             const newTotalCount: number = totalCount + nowCount;
-            console.log(`newTotalCount = ${newTotalCount}, nowCount=${nowCount}`);
+            const newMostRecentCount = nowCount;
+            const newMostRecentCountDate = new Date();
+
             setTotalCount(newTotalCount);
-            setMostRecentCount(nowCount);
-            setMostRecentCountDate(new Date());
+            setMostRecentCount(newMostRecentCount);
+            setMostRecentCountDate(newMostRecentCountDate);
             setIsPaused(false);
 
             (async () => {
                 await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
-                await AsyncStorage.setItem('mostRecentCount', `${mostRecentCount}`);
-                await AsyncStorage.setItem('mostRecentCountDate', `${mostRecentCountDate}`);
+                await AsyncStorage.setItem('mostRecentCount', `${newMostRecentCount}`);
+                await AsyncStorage.setItem('mostRecentCountDate', `${newMostRecentCountDate}`);
+                console.log(
+                    `Saved data to async storage newTotalCount = ${newTotalCount}, newMostRecentCount=${newMostRecentCount}, newMostRecentCountDate=${newMostRecentCountDate}`,
+                );
             })();
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
