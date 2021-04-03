@@ -2,8 +2,9 @@
 /* eslint-disable prettier/prettier */
 import React from 'react';
 
-import { Button, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { formatRelative } from 'date-fns';
+import Colors from './Colors';
 
 export interface MostRecentProps {
     mostRecentCount: number;
@@ -17,7 +18,9 @@ const MostRecent = (props: MostRecentProps): JSX.Element => {
                 <Text style={{ textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow:1}}>
                     Most Recent
                 </Text>
-                <Button disabled={true} title={formatRelative(props.date, new Date())} onPress={() => undefined} />
+                <Text style={{ textAlign: 'center', textAlignVertical: 'center', padding: 2, backgroundColor: Colors.gray, flexGrow:5,  color: Colors.white} }>
+                    {formatRelative(props.date, new Date())}
+                </Text>
                 <Text style={{ fontSize: 20, textAlign: 'right', padding: 2, backgroundColor:'white', flexGrow:5}}>
                     {props.mostRecentCount}
                 </Text>

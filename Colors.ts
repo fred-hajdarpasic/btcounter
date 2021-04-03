@@ -9,6 +9,7 @@ const Colors = {
     yellow: '#ffff00',
     pink: '#e6b8ba',
     purple: '#cdc0de',
+    white: '#ffffff',
 };
 
 export default Colors;
