@@ -1,8 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable prettier/prettier */
 import React from 'react';
 
-import {Alert, Button, Text, TouchableHighlight, View} from 'react-native';
+import {Alert, Button, Linking, Text, TouchableHighlight, View} from 'react-native';
 import Colors from './Colors';
 
 export interface ClearTotalAndHelpProps {
@@ -14,7 +13,8 @@ const ClearTotalAndHelp = (props: ClearTotalAndHelpProps): JSX.Element => {
         <View>
             <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
                 <TouchableHighlight style={{flexGrow: 5}}>
-                    <Button color={Colors.yellow}
+                    <Button
+                        color={Colors.yellow}
                         title="Clear Total"
                         onPress={() => {
                             Alert.alert('Clear History', 'Please confirm that you want to clear histpry?', [
@@ -30,12 +30,17 @@ const ClearTotalAndHelp = (props: ClearTotalAndHelpProps): JSX.Element => {
                 </TouchableHighlight>
                 <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
                 <TouchableHighlight style={{flexGrow: 5}}>
-                    <Button color={Colors.lightGreen}
-                        title="Help"
-                        onPress={() => {
-                            //props.showHelp();
+                    <Text
+                        style={{
+                            height: 35,
+                            textAlign: 'center',
+                            textAlignVertical: 'center',
+                            color: 'black',
+                            backgroundColor: Colors.lightGreen,
                         }}
-                    />
+                        onPress={() => Linking.openURL('https://www.google.com')}>
+                        Help
+                    </Text>
                 </TouchableHighlight>
             </View>
         </View>
