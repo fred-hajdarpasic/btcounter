@@ -15,6 +15,7 @@ import {subDays} from 'date-fns';
 import Pause from './Pause';
 import ClearTotalAndHelp from './ClearTotalAndHelp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Colors from './Colors';
 
 const App = () => {
     const [totalCount, setTotalCount] = React.useState(10);
@@ -63,7 +64,6 @@ const App = () => {
         setCollecting,
         isPaused,
         setIsPaused,
-        retrieveConnected,
         toggleConnection,
         retrieveRssi,
         ScanButton,
@@ -120,11 +120,27 @@ const App = () => {
             <SafeAreaView>
                 <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
                     <View style={styles.body}>
-                        <ConnectionIndicator />
-                        <ScanButton />
-                        <View style={{margin: 10}}>
-                            <Button title="Retrieve connected peripherals" onPress={() => retrieveConnected()} />
+                        <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
+                            <View style={{flexGrow: 5}}>
+                                <ConnectionIndicator />
+                            </View>
+                            <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
+                            <View style={{flexGrow: 5}}>
+                                <Text
+                                    style={{
+                                        height: 20,
+                                        textAlign: 'center',
+                                        textAlignVertical: 'center',
+                                        padding: 2,
+                                        flexGrow: 1,
+                                        backgroundColor: Colors.lightBlue,
+                                        color: 'white',
+                                    }}>
+                                    Username: ?????
+                                </Text>
+                            </View>
                         </View>
+                        <ScanButton />
                         {list.length === 0 && (
                             <View style={{flex: 1, margin: 20}}>
                                 <Text style={{textAlign: 'center'}}>No peripherals</Text>

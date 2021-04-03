@@ -1,5 +1,6 @@
+/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import {View, Button} from 'react-native';
+import {View, Button, Text} from 'react-native';
 
 import BleManager from 'react-native-ble-manager';
 import Colors from './Colors';
@@ -13,7 +14,7 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
     const [getColor, setColor] = useMyMemo(Colors.orange);
     const [getBlIsOn, setBlIsOn] = useMyMemo(true);
     const [getIsConnected, setIsConnected] = useMyMemo(false);
-    const [getTitle, setTitle] = useMyMemo('not connected');
+    const [getTitle, setTitle] = useMyMemo('NOT CONNECTED');
 
     const tickFunction = React.useCallback(async () => {
         try {
@@ -28,7 +29,7 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
             // console.log('Collecting rssi for peripheral id = ' + preipheralId);
             setIsConnected(true);
             setColor(getRssi() > LOW_RSSI_THRESHOLD ? Colors.green : Colors.orange);
-            setTitle(getRssi() > LOW_RSSI_THRESHOLD ? 'connected' : `RSSI low ${getRssi()}`);
+            setTitle(getRssi() > LOW_RSSI_THRESHOLD ? 'SE connected' : `RSSI LOW ${getRssi()}`);
             BleManager.readRSSI(preipheralId)
                 .then((data: any) => {
                     // console.log('Current RSSI: ' + typeof data);
@@ -40,7 +41,7 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
         } else {
             setIsConnected(false);
             setColor(getBlIsOn() ? Colors.orange : Colors.red);
-            setTitle(getBlIsOn() ? 'not connected' : 'BL is off');
+            setTitle(getBlIsOn() ? 'NOT CONNECTED' : 'BL IS OFF');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preipheralId]);
@@ -50,7 +51,18 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
     const ConnectionIndicator = (): JSX.Element => {
         return (
             <View>
-                <Button color={getColor()} title={getTitle()} onPress={() => undefined} />
+                <Text
+                    style={{
+                        height: 40,
+                        textAlign: 'center',
+                        textAlignVertical: 'center',
+                        padding: 2,
+                        flexGrow: 1,
+                        backgroundColor: getColor(),
+                        color: 'white',
+                    }}>
+                    {getTitle()}
+                </Text>
             </View>
         );
     };

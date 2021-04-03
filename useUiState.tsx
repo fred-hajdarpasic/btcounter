@@ -36,7 +36,6 @@ const useUiState = (
     (b: boolean) => void,
     () => boolean,
     (b: boolean) => void,
-    () => void,
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
     () => JSX.Element,
@@ -112,23 +111,6 @@ const useUiState = (
         await BleManager.disconnect(id);
         peripheral.connected = false;
         console.log('Disconnected from ' + id);
-    };
-
-    const retrieveConnected = () => {
-        BleManager.getConnectedPeripherals([]).then(results => {
-            if (results.length === 0) {
-                console.log('No connected peripherals');
-            }
-            console.log(results);
-            for (var i = 0; i < results.length; i++) {
-                let peripheral = results[i] as Peripheral;
-                let connected = true;
-                let btCounterPeripheral = {peripheral, connected} as BtCounterPeripheral;
-
-                peripherals.set(peripheral.id, btCounterPeripheral);
-                setList(Array.from(peripherals.values()));
-            }
-        });
     };
 
     const toggleConnection = (peripheral: BtCounterPeripheral) => {
@@ -253,7 +235,6 @@ const useUiState = (
         setCollecting,
         isPaused,
         setIsPaused,
-        retrieveConnected,
         toggleConnection,
         retrieveRssi,
         ScanButton,
