@@ -11,7 +11,7 @@ const useTimer = (interval: number, tickFunction: () => void):
         let timerId: NodeJS.Timeout;
         const startTimer = () => {
             timerId = setInterval(() => {
-                console.log('Timer tick');
+                // console.log('Timer tick');
                 tickFunction();
             }, interval);
             return timerId;

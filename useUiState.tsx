@@ -158,7 +158,7 @@ const useUiState = (
                 // console.log(`SensorTag: id = ${peripheral.id} already in the list.`);
             }
         } else {
-            // console.log('Not SensorTag - ignoring');
+            console.log(`Not SensorTag - ${JSON.stringify(peripheral)}`);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

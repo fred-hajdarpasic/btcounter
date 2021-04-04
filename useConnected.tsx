@@ -33,7 +33,7 @@ const useConnected = (
 
     React.useEffect(() => {
         const handleDidUpdateState = (stateData: any) => {
-            console.log('BLE state = ' + JSON.stringify(stateData));
+            // console.log('BLE state = ' + JSON.stringify(stateData));
             if (stateData.state === 'on') {
                 setBlIsOn(true);
                 onBleStateChanged(true);
