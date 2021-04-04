@@ -122,40 +122,40 @@ const App = () => {
     }, []);
 
     return (
-        <>
+        <View>
             <StatusBar barStyle="dark-content" />
-            <SafeAreaView>
-                <ScrollView contentInsetAdjustmentBehavior="automatic" style={styles.scrollView}>
-                    <View style={styles.body}>
-                        <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
-                            <View style={{flexGrow: 5}}>
-                                <ConnectionIndicator connected={isConnected} />
-                            </View>
-                            <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
-                            <View style={{flexGrow: 5}}>
-                                <Text
-                                    style={{
-                                        height: 20,
-                                        textAlign: 'center',
-                                        textAlignVertical: 'center',
-                                        padding: 2,
-                                        flexGrow: 1,
-                                        backgroundColor: Colors.lightBlue,
-                                        color: 'white',
-                                    }}>
-                                    Username: ?????
-                                </Text>
-                            </View>
+            <SafeAreaView style={{height: '100%'}}>
+                <View style={styles.body}>
+                    <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
+                        <View style={{flexGrow: 5}}>
+                            <ConnectionIndicator connected={isConnected} />
                         </View>
-                        <ScanButton />
+                        <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
+                        <View style={{flexGrow: 5}}>
+                            <Text
+                                style={{
+                                    height: 20,
+                                    textAlign: 'center',
+                                    textAlignVertical: 'center',
+                                    padding: 2,
+                                    flexGrow: 1,
+                                    backgroundColor: Colors.lightBlue,
+                                    color: 'white',
+                                }}>
+                                Username: ?????
+                            </Text>
+                        </View>
+                    </View>
+                    <ScanButton />
+                </View>
+                <View style={styles.deviceList}>
+                    <View>
                         {list.length === 0 && (
                             <View style={{flex: 1, margin: 20}}>
                                 <Text style={{textAlign: 'center'}}>No peripherals</Text>
                             </View>
                         )}
                     </View>
-                </ScrollView>
-                <View style={styles.scrollView}>
                     <FlatList
                         style={{margin: 10}}
                         data={list}
@@ -181,7 +181,7 @@ const App = () => {
                     />
                 </View>
             </SafeAreaView>
-        </>
+        </View>
     );
 };
 

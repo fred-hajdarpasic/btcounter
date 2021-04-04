@@ -5,6 +5,10 @@ export const styles = StyleSheet.create({
     scrollView: {
         backgroundColor: Colors.lighter,
     },
+    deviceList: {
+        backgroundColor: Colors.lighter,
+        flexGrow: 1,
+    },
     engine: {
         position: 'absolute',
         right: 0,
