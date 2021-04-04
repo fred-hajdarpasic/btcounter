@@ -1,61 +1,78 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import {View, Text} from 'react-native';
+import {View, Text, NativeModules, NativeEventEmitter} from 'react-native';
 
-import BleManager from 'react-native-ble-manager';
 import Colors from './Colors';
-import useMyMemo from './useMyMemo';
 import useRefreshTimer from './useRefreshTimer';
 
-const LOW_RSSI_THRESHOLD = -90;
+import BleManager from 'react-native-ble-manager';
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
+const LOW_RSSI_THRESHOLD = -90;
 interface ConnectionIndicatorProps {
     connected: boolean;
 }
 
-const useConnected = (preipheralId: string): [(props: ConnectionIndicatorProps) => JSX.Element] => {
-    const [getRssi, setRssi] = useMyMemo(0);
-    const [getBlIsOn, setBlIsOn] = useMyMemo(true);
+const useConnected = (
+    preipheralId: string,
+    onBleStateChanged: (on: boolean) => void,
+): [(props: ConnectionIndicatorProps) => JSX.Element] => {
+    const [rssi, setRssi] = React.useState(0);
+    const [blIsOn, setBlIsOn] = React.useState(false);
 
     const tickFunction = React.useCallback(async () => {
         try {
-            await BleManager.enableBluetooth();
-            setBlIsOn(true);
-            // console.log('BLE is on');
+            await BleManager.checkState();
         } catch (error) {
             console.log(`Error: ${error}`);
-            setBlIsOn(false);
         }
-        if (preipheralId) {
-            // console.log('Collecting rssi for peripheral id = ' + preipheralId);
-            BleManager.readRSSI(preipheralId)
-                .then((data: any) => {
-                    // console.log('Current RSSI: ' + typeof data);
-                    setRssi(data as number);
-                })
-                .catch(error => {
-                    console.log(error);
-                });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preipheralId]);
+    }, []);
 
-    useRefreshTimer(20000, tickFunction);
+    useRefreshTimer(1000, tickFunction);
+
+    React.useEffect(() => {
+        const handleDidUpdateState = (stateData: any) => {
+            console.log('BLE state = ' + JSON.stringify(stateData));
+            if (stateData.state === 'on') {
+                setBlIsOn(true);
+                onBleStateChanged(true);
+                if (preipheralId) {
+                    // console.log('Collecting rssi for peripheral id = ' + preipheralId);
+                    BleManager.readRSSI(preipheralId)
+                        .then((rssiData: any) => {
+                            console.log('Current RSSI: ' + rssiData);
+                            setRssi(rssiData as number);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                }
+            } else {
+                setBlIsOn(false);
+                onBleStateChanged(false);
+            }
+        };
+        bleManagerEmitter.addListener('BleManagerDidUpdateState', handleDidUpdateState);
+        return () => {
+            bleManagerEmitter.removeListener('BleManagerDidUpdateState', handleDidUpdateState);
+        };
+    }, [onBleStateChanged, preipheralId]);
 
     const ConnectionIndicator = (props: ConnectionIndicatorProps): JSX.Element => {
         const getColor = () => {
             if (props.connected) {
-                return getRssi() > LOW_RSSI_THRESHOLD ? Colors.green : Colors.orange;
+                return rssi > LOW_RSSI_THRESHOLD ? Colors.green : Colors.orange;
             } else {
-                return getBlIsOn() ? Colors.orange : Colors.red;
+                return blIsOn ? Colors.orange : Colors.red;
             }
         };
 
         const getTitle = (): string => {
             if (props.connected) {
-                return getRssi() > LOW_RSSI_THRESHOLD ? 'SE connected' : `RSSI LOW ${getRssi()}`;
+                return rssi > LOW_RSSI_THRESHOLD ? 'SE connected' : `RSSI LOW ${rssi}`;
             } else {
-                return getBlIsOn() ? 'NOT CONNECTED' : 'BL IS OFF';
+                return blIsOn ? 'NOT CONNECTED' : 'BL IS OFF';
             }
         };
 

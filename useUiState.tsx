@@ -3,7 +3,7 @@ import React, {useState, useCallback, Dispatch, SetStateAction} from 'react';
 import BleManager from 'react-native-ble-manager';
 import {Peripheral} from 'react-native-ble-manager';
 import RNBeep from 'react-native-a-beep';
-import useScanning from './useScanning';
+import useScanning, {ScanButtonProperties} from './useScanning';
 import useInitBle from './useInitBle';
 import useTimer from './useTimer';
 import NowCount from './NowCount';
@@ -37,7 +37,7 @@ const useUiState = (
     Dispatch<SetStateAction<any[]>>,
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
-    () => JSX.Element,
+    (props: ScanButtonProperties) => JSX.Element,
     (props: {disabled: boolean}) => JSX.Element,
 ] => {
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
@@ -211,7 +211,6 @@ const useUiState = (
             <NowCount
                 started={isCollecting}
                 disabled={props.disabled}
-                forceRefresh={force}
                 nowCount={nowCount}
                 onStartCollecting={() => {
                     onStartCollecting();

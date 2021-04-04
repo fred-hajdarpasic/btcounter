@@ -9,14 +9,21 @@ import * as Progress from 'react-native-progress';
 import Colors from './Colors';
 
 const SCAN_DURATION = 20;
-const useScanning = (onStartScan: () => void): [() => void, () => void, () => JSX.Element] => {
+
+export interface ScanButtonProperties {
+    disabled: boolean;
+}
+
+const useScanning = (
+    onStartScan: () => void,
+): [() => void, () => void, (props: ScanButtonProperties) => JSX.Element] => {
     const [isScanInProgress, setIsScanInProgress] = useState(false);
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
     const [countValue, setCountValue] = React.useState(SCAN_DURATION);
 
     React.useEffect(() => {
         let timerid = setInterval(() => {
-            setCountValue( (countValue > 0) ? countValue - 1 : 0);
+            setCountValue(countValue > 0 ? countValue - 1 : 0);
         }, 1000);
         return () => {
             clearInterval(timerid);
@@ -63,10 +70,20 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
         setCountValue(0);
     }, []);
 
-    const ScanButton = (): JSX.Element => {
+    const ScanButton = (props: ScanButtonProperties): JSX.Element => {
+        const backgroundColor = !props.disabled ? (!isScanInProgress ? Colors.blue : Colors.pink) : Colors.gray;
+        const title = !props.disabled
+            ? !isScanTransitioning
+                ? !isScanInProgress
+                    ? 'SCAN BLUETOOTH'
+                    : `STOP SCANNING (${countValue})`
+                : 'WAIT'
+            : 'BL IS OFF';
         return (
             <View style={{margin: 10}}>
-                <TouchableHighlight onPress={() => (!isScanInProgress ? startScan() : stopScan())}>
+                <TouchableHighlight
+                    onPress={() => (!isScanInProgress ? startScan() : stopScan())}
+                    disabled={props.disabled}>
                     <Text
                         style={{
                             height: 60,
@@ -74,10 +91,10 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
                             textAlignVertical: 'center',
                             padding: 2,
                             flexGrow: 1,
-                            backgroundColor: `${!isScanInProgress ? Colors.blue : Colors.pink}`,
+                            backgroundColor: `${backgroundColor}`,
                             color: 'white',
                         }}>
-                        { !isScanTransitioning ? ( !isScanInProgress ? 'SCAN BLUETOOTH' : `STOP SCANNING (${countValue})` ) : 'WAIT' }
+                        {title}
                     </Text>
                 </TouchableHighlight>
                 {/* <Progress.Bar progress={(20 - countValue / 20} width={20} style={{width:'100%'}}/> */}

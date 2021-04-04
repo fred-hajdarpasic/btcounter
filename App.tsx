@@ -23,6 +23,7 @@ const App = () => {
     const [mostRecentCount, setMostRecentCount] = React.useState(50);
     const [mostRecentCountDate, setMostRecentCountDate] = React.useState(new Date());
     const [isConnected, setIsConnected] = React.useState(false);
+    const [blIsOn, setBlIsOn] = React.useState(false);
 
     const [isCollecting, setIsCollecting] = React.useState(false);
     const [isPaused, setIsPaused] = React.useState(true);
@@ -76,7 +77,12 @@ const App = () => {
         setNowCount,
         onStopCollecting,
     );
-    const [ConnectionIndicator] = useConnected(connectedPeripheralId);
+
+    const onBleStateChanged = (on: boolean) => {
+        setBlIsOn(on);
+    };
+
+    const [ConnectionIndicator] = useConnected(connectedPeripheralId, onBleStateChanged);
     const renderItem = (peripheral: BtCounterPeripheral) => {
         return (
             <PeripheralDetails
@@ -146,7 +152,7 @@ const App = () => {
                             </Text>
                         </View>
                     </View>
-                    <ScanButton />
+                    <ScanButton disabled={!blIsOn} />
                 </View>
                 <View style={styles.deviceList}>
                     <View>
