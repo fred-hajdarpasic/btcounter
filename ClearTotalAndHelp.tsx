@@ -13,9 +13,14 @@ const ClearTotalAndHelp = (props: ClearTotalAndHelpProps): JSX.Element => {
         <View>
             <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
                 <TouchableHighlight style={{flexGrow: 5}}>
-                    <Button
-                        color={Colors.yellow}
-                        title="Clear Total"
+                    <Text
+                        style={{
+                            height: 35,
+                            textAlign: 'center',
+                            textAlignVertical: 'center',
+                            color: 'black',
+                            backgroundColor: Colors.yellow,
+                        }}
                         onPress={() => {
                             Alert.alert('Clear History', 'Please confirm that you want to clear histpry?', [
                                 {
@@ -25,8 +30,9 @@ const ClearTotalAndHelp = (props: ClearTotalAndHelpProps): JSX.Element => {
                                 },
                                 {text: 'OK', onPress: () => props.onClearTotalConfirmed()},
                             ]);
-                        }}
-                    />
+                        }}>
+                        Clear Total
+                    </Text>
                 </TouchableHighlight>
                 <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
                 <TouchableHighlight style={{flexGrow: 5}}>
@@ -38,7 +44,7 @@ const ClearTotalAndHelp = (props: ClearTotalAndHelpProps): JSX.Element => {
                             color: 'black',
                             backgroundColor: Colors.lightGreen,
                         }}
-                        onPress={() => Linking.openURL('https://www.google.com')}>
+                        onPress={() => Linking.openURL('http://www.srp-hk.com/')}>
                         Help
                     </Text>
                 </TouchableHighlight>

@@ -1,38 +1,35 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable prettier/prettier */
 import React, {useState, useCallback} from 'react';
-import {View, Button, TouchableHighlight, Text} from 'react-native';
+import {View, TouchableHighlight, Text} from 'react-native';
 
 import BleManager from 'react-native-ble-manager';
 import * as Progress from 'react-native-progress';
 
-import useNumberMemo from './useNumberMemo';
-import useDownCounterWithTimer from './useDownCounterWithTimer';
 import Colors from './Colors';
 
+const SCAN_DURATION = 20;
 const useScanning = (onStartScan: () => void): [() => void, () => void, () => JSX.Element] => {
     const [isScanInProgress, setIsScanInProgress] = useState(false);
     const [isScanTransitioning, setIsScanTransitioning] = useState(false);
-    const [duration, setDuration] = useState(20);
-    const [getCountValue, startDownCounter, stopDownCounter] = useDownCounterWithTimer(duration, 1000);
+    const [countValue, setCountValue] = React.useState(SCAN_DURATION);
 
-    const [force, setForce] = useState(false);
     React.useEffect(() => {
         let timerid = setInterval(() => {
-            setForce(!force);
-        }, 500);
+            setCountValue( (countValue > 0) ? countValue - 1 : 0);
+        }, 1000);
         return () => {
             clearInterval(timerid);
         };
     });
 
     const startScan = useCallback(() => {
-        startDownCounter();
+        setCountValue(20);
         onStartScan();
         setIsScanInProgress(true);
         setIsScanTransitioning(true);
         console.log('Initiating Scanning...');
-        BleManager.scan([], duration, true)
+        BleManager.scan([], SCAN_DURATION, true)
             .then(() => {
                 console.log('Peripheral started scanning...');
                 setIsScanTransitioning(false);
@@ -45,7 +42,7 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
     }, []);
 
     const stopScan = useCallback(() => {
-        stopDownCounter();
+        setCountValue(0);
         setIsScanInProgress(false);
         setIsScanTransitioning(true);
         console.log('Stopping Scanning...');
@@ -63,10 +60,9 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
     const handleStopScan = useCallback(() => {
         console.log('Stopped scanning');
         setIsScanInProgress(false);
-        stopDownCounter();
+        setCountValue(0);
     }, []);
 
-    // console.log(`Scanning render ${getCountValue()}`);
     const ScanButton = (): JSX.Element => {
         return (
             <View style={{margin: 10}}>
@@ -81,10 +77,10 @@ const useScanning = (onStartScan: () => void): [() => void, () => void, () => JS
                             backgroundColor: `${!isScanInProgress ? Colors.blue : Colors.pink}`,
                             color: 'white',
                         }}>
-                        { !isScanTransitioning ? ( !isScanInProgress ? 'SCAN BLUETOOTH' : `STOP SCANNING (${getCountValue()}) (${force ? '.' : '!'})` ) : 'WAIT' }
+                        { !isScanTransitioning ? ( !isScanInProgress ? 'SCAN BLUETOOTH' : `STOP SCANNING (${countValue})` ) : 'WAIT' }
                     </Text>
                 </TouchableHighlight>
-                {/* <Progress.Bar progress={(20 - getCountValue()) / 20} width={20} style={{width:'100%'}}/> */}
+                {/* <Progress.Bar progress={(20 - countValue / 20} width={20} style={{width:'100%'}}/> */}
             </View>
         );
     };

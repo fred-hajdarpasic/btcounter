@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import React, {useState, useCallback, Dispatch, SetStateAction} from 'react';
 
 import BleManager from 'react-native-ble-manager';
@@ -6,10 +5,9 @@ import {Peripheral} from 'react-native-ble-manager';
 import RNBeep from 'react-native-a-beep';
 import useScanning from './useScanning';
 import useInitBle from './useInitBle';
-import useNumberMemo from './useNumberMemo';
 import useTimer from './useTimer';
-import useBooleanMemo from './useBooleanMemo';
 import NowCount from './NowCount';
+import useBleHandleValueForCharacteristic from './useBleHandleValueForCharacteristic';
 
 interface BtCounterPeripheral {
     peripheral: Peripheral;
@@ -27,15 +25,16 @@ const PERIPHERAL_NAME_TO_SEARCH = 'CC2650 SensorTag';
 const NOTIFY_SERVICE_ID = 'FFE0';
 const NOTIFY_CHARACTERISTIC_ID = 'FFE1';
 const useUiState = (
+    isCollecting: boolean,
+    isPaused: boolean,
+    nowCount: number,
+    onStartScanning: () => void,
     onStartCollecting: () => void,
-    onStopCollecting: (nowCount: number) => void,
+    setNowCount: (count: number) => void,
+    onStopCollecting: () => void,
 ): [
     any[],
     Dispatch<SetStateAction<any[]>>,
-    () => boolean,
-    (b: boolean) => void,
-    () => boolean,
-    (b: boolean) => void,
     (peripheral: BtCounterPeripheral) => void,
     (id: string, p: BtCounterPeripheral | undefined) => Promise<void>,
     () => JSX.Element,
@@ -43,10 +42,7 @@ const useUiState = (
 ] => {
     const peripherals = React.useMemo(() => new Map<string, BtCounterPeripheral>(), []);
     const [list, setList] = useState([] as any[]);
-    const [isCollecting, setCollecting] = useBooleanMemo(false);
-    const [isPaused, setIsPaused] = useBooleanMemo(false);
 
-    const [getNowCount, setNowCount] = useNumberMemo(0);
     const [force, setForce] = useState(false);
     const [startScreenRefreshTimer, stopScreenRefreshTimer] = useTimer(1000, () => {
         setForce(!force);
@@ -113,23 +109,21 @@ const useUiState = (
         console.log('Disconnected from ' + id);
     };
 
-    const toggleConnection = (peripheral: BtCounterPeripheral) => {
-        (async () => {
-            const id = peripheral.peripheral.id;
-            console.log(`peripheral = ${JSON.stringify(peripheral)}`);
-            if (peripheral) {
-                if (peripheral.connected) {
-                    await disconnect(peripheral);
-                } else {
-                    await connect(peripheral);
-                }
-                let p = peripherals.get(id);
-                if (p) {
-                    peripherals.set(id, p);
-                    setList(Array.from(peripherals.values()));
-                }
+    const toggleConnection = async (peripheral: BtCounterPeripheral) => {
+        const id = peripheral.peripheral.id;
+        console.log(`peripheral = ${JSON.stringify(peripheral)}`);
+        if (peripheral) {
+            if (peripheral.connected) {
+                await disconnect(peripheral);
+            } else {
+                await connect(peripheral);
             }
-        })();
+            let p = peripherals.get(id);
+            if (p) {
+                peripherals.set(id, p);
+                setList(Array.from(peripherals.values()));
+            }
+        }
     };
 
     const onStartScan = useCallback(() => {
@@ -142,6 +136,7 @@ const useUiState = (
             peripherals.clear();
             setList([]);
         })();
+        onStartScanning();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -179,28 +174,31 @@ const useUiState = (
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleUpdateValueForCharacteristic = useCallback((data: any) => {
-        console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
-        if (data.value[0] && isCollecting() && !isPaused()) {
-            setNowCount(getNowCount() + 1);
-        }
-        if (data.value[0] && isCollecting()) {
-            RNBeep.beep();
-        }
+    const handleUpdateValueForCharacteristic = useCallback(
+        (data: any) => {
+            console.log(
+                'Received data from ' + data.peripheral + ' characteristic ' + data.characteristic,
+                data.value + 'isCollecting' + isCollecting + 'isPaused' + isPaused,
+            );
+            if (data.value[0] && isCollecting && !isPaused) {
+                console.log('INCREMENT');
+                setNowCount(nowCount + 1);
+            }
+            if (data.value[0] && isCollecting) {
+                RNBeep.beep();
+            }
+        },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useInitBle(
-        handleDiscoverPeripheral,
-        handleDisconnectedPeripheral,
-        handleUpdateValueForCharacteristic,
-        handleStopScan,
+        [isCollecting, isPaused, nowCount],
     );
+
+    useInitBle(handleDiscoverPeripheral, handleDisconnectedPeripheral, handleStopScan);
+    useBleHandleValueForCharacteristic(handleUpdateValueForCharacteristic);
 
     // console.log(`Main screen render getNowCount = ${getNowCount()} isCollecting=${isCollecting()}`);
 
     React.useEffect(() => {
-        if (isCollecting() && !isPaused()) {
+        if (isCollecting && !isPaused) {
             startScreenRefreshTimer();
         } else {
             stopScreenRefreshTimer();
@@ -211,35 +209,21 @@ const useUiState = (
     const NowCountWidget = (props: {disabled: boolean}): JSX.Element => {
         return (
             <NowCount
-                started={isCollecting()}
+                started={isCollecting}
                 disabled={props.disabled}
                 forceRefresh={force}
-                nowCount={getNowCount()}
+                nowCount={nowCount}
                 onStartCollecting={() => {
-                    setNowCount(0);
-                    setCollecting(true);
                     onStartCollecting();
                 }}
-                onStopCollecting={(nowCount: number) => {
-                    setCollecting(false);
-                    onStopCollecting(nowCount);
+                onStopCollecting={() => {
+                    onStopCollecting();
                 }}
             />
         );
     };
 
-    return [
-        list,
-        setList,
-        isCollecting,
-        setCollecting,
-        isPaused,
-        setIsPaused,
-        toggleConnection,
-        retrieveRssi,
-        ScanButton,
-        NowCountWidget,
-    ];
+    return [list, setList, toggleConnection, retrieveRssi, ScanButton, NowCountWidget];
 };
 
 export default useUiState;

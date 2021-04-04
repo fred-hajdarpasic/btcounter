@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import {View, Button, Text} from 'react-native';
+import {View, Text} from 'react-native';
 
 import BleManager from 'react-native-ble-manager';
 import Colors from './Colors';
@@ -9,12 +9,13 @@ import useRefreshTimer from './useRefreshTimer';
 
 const LOW_RSSI_THRESHOLD = -90;
 
-const useConnected = (preipheralId: string): [() => JSX.Element] => {
+interface ConnectionIndicatorProps {
+    connected: boolean;
+}
+
+const useConnected = (preipheralId: string): [(props: ConnectionIndicatorProps) => JSX.Element] => {
     const [getRssi, setRssi] = useMyMemo(0);
-    const [getColor, setColor] = useMyMemo(Colors.orange);
     const [getBlIsOn, setBlIsOn] = useMyMemo(true);
-    const [getIsConnected, setIsConnected] = useMyMemo(false);
-    const [getTitle, setTitle] = useMyMemo('NOT CONNECTED');
 
     const tickFunction = React.useCallback(async () => {
         try {
@@ -27,9 +28,6 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
         }
         if (preipheralId) {
             // console.log('Collecting rssi for peripheral id = ' + preipheralId);
-            setIsConnected(true);
-            setColor(getRssi() > LOW_RSSI_THRESHOLD ? Colors.green : Colors.orange);
-            setTitle(getRssi() > LOW_RSSI_THRESHOLD ? 'SE connected' : `RSSI LOW ${getRssi()}`);
             BleManager.readRSSI(preipheralId)
                 .then((data: any) => {
                     // console.log('Current RSSI: ' + typeof data);
@@ -38,17 +36,29 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
                 .catch(error => {
                     console.log(error);
                 });
-        } else {
-            setIsConnected(false);
-            setColor(getBlIsOn() ? Colors.orange : Colors.red);
-            setTitle(getBlIsOn() ? 'NOT CONNECTED' : 'BL IS OFF');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preipheralId]);
 
-    useRefreshTimer(2000, tickFunction);
+    useRefreshTimer(20000, tickFunction);
 
-    const ConnectionIndicator = (): JSX.Element => {
+    const ConnectionIndicator = (props: ConnectionIndicatorProps): JSX.Element => {
+        const getColor = () => {
+            if (props.connected) {
+                return getRssi() > LOW_RSSI_THRESHOLD ? Colors.green : Colors.orange;
+            } else {
+                return getBlIsOn() ? Colors.orange : Colors.red;
+            }
+        };
+
+        const getTitle = (): string => {
+            if (props.connected) {
+                return getRssi() > LOW_RSSI_THRESHOLD ? 'SE connected' : `RSSI LOW ${getRssi()}`;
+            } else {
+                return getBlIsOn() ? 'NOT CONNECTED' : 'BL IS OFF';
+            }
+        };
+
         return (
             <View>
                 <Text
@@ -66,6 +76,7 @@ const useConnected = (preipheralId: string): [() => JSX.Element] => {
             </View>
         );
     };
+
     return [ConnectionIndicator];
 };
 

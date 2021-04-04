@@ -10,7 +10,6 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 const useInitBle = (
     handleDiscoverPeripheral: (peripheral: Peripheral) => void,
     handleDisconnectedPeripheral: (data: any) => void,
-    handleUpdateValueForCharacteristic: (data: any) => void,
     handleStopScan: () => void) => {
 
     useEffect(() => {
@@ -21,7 +20,6 @@ const useInitBle = (
             bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
             bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan);
             bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
-            bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
 
             if (Platform.OS === 'android' && Platform.Version >= 23) {
                 PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((checkPermissionResult) => {
@@ -45,9 +43,8 @@ const useInitBle = (
             bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
             bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan);
             bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
-            bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic);
         });
-    }, [handleDiscoverPeripheral, handleDisconnectedPeripheral, handleUpdateValueForCharacteristic, handleStopScan]);
+    }, [handleDiscoverPeripheral, handleDisconnectedPeripheral, handleStopScan]);
 };
 
 export default useInitBle;

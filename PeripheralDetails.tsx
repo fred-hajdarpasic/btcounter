@@ -19,10 +19,11 @@ interface PeripheralDetailsProps {
 
 const PeripheralDetails = (props: PeripheralDetailsProps) => {
     // console.log(`item=${JSON.stringify(item)}`);
-    const color = props.item.connected ? Colors.lightGreen : Colors.purple;
+    const color = props.item.connected ? Colors.green : Colors.orange;
+
     return (
         <TouchableHighlight
-            onPress={props.onPress}
+            onPress={() => props.onPress()}
             key={props.item.peripheral.id}>
             <View style={[styles.row, {backgroundColor: color}]}>
                 <Text

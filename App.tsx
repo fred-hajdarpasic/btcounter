@@ -18,69 +18,77 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from './Colors';
 
 const App = () => {
+    const [nowCount, setNowCount] = React.useState(0);
     const [totalCount, setTotalCount] = React.useState(10);
     const [mostRecentCount, setMostRecentCount] = React.useState(50);
     const [mostRecentCountDate, setMostRecentCountDate] = React.useState(new Date());
-    const [isConnected, setIsCOnnected] = React.useState(false);
+    const [isConnected, setIsConnected] = React.useState(false);
 
-    const [getSelectedPeripheralId, setSelectedPeripheralId] = useMyMemo('');
+    const [isCollecting, setIsCollecting] = React.useState(false);
+    const [isPaused, setIsPaused] = React.useState(true);
+
+    const [connectedPeripheralId, setConnectedPeripheralId] = React.useState('');
 
     const onStartCollecting = React.useCallback(() => {
+        console.log('On start collecting called.');
+        setIsCollecting(true);
         setIsPaused(false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        setNowCount(0);
     }, []);
 
-    const onStopCollecting = React.useCallback(
-        (nowCount: number) => {
-            if (nowCount === 0) {
-                return;
-            }
-            const newTotalCount: number = totalCount + nowCount;
-            const newMostRecentCount = nowCount;
-            const newMostRecentCountDate = new Date();
+    const onStopCollecting = React.useCallback(() => {
+        if (nowCount === 0) {
+            return;
+        }
+        const newTotalCount: number = totalCount + nowCount;
+        const newMostRecentCount = nowCount;
+        const newMostRecentCountDate = new Date();
 
-            setTotalCount(newTotalCount);
-            setMostRecentCount(newMostRecentCount);
-            setMostRecentCountDate(newMostRecentCountDate);
-            setIsPaused(false);
+        setTotalCount(newTotalCount);
+        setMostRecentCount(newMostRecentCount);
+        setMostRecentCountDate(newMostRecentCountDate);
+        setIsPaused(true);
+        setIsCollecting(false);
 
-            (async () => {
-                await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
-                await AsyncStorage.setItem('mostRecentCount', `${newMostRecentCount}`);
-                await AsyncStorage.setItem('mostRecentCountDate', `${newMostRecentCountDate}`);
-                console.log(
-                    `Saved data to async storage newTotalCount = ${newTotalCount}, newMostRecentCount=${newMostRecentCount}, newMostRecentCountDate=${newMostRecentCountDate}`,
-                );
-            })();
-        },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [totalCount],
-    );
+        (async () => {
+            await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
+            await AsyncStorage.setItem('mostRecentCount', `${newMostRecentCount}`);
+            await AsyncStorage.setItem('mostRecentCountDate', `${newMostRecentCountDate}`);
+            console.log(
+                `Saved data to async storage newTotalCount = ${newTotalCount}, newMostRecentCount=${newMostRecentCount}, newMostRecentCountDate=${newMostRecentCountDate}`,
+            );
+        })();
+    }, [nowCount, totalCount]);
 
-    const [
-        list,
-        setList,
+    const onStartScanning = () => {
+        console.log('App: On start scanning');
+        setIsCollecting(false);
+        setIsPaused(true);
+        setIsConnected(false);
+        setConnectedPeripheralId('');
+    };
+
+    const [list, setList, toggleConnection, retrieveRssi, ScanButton, NowCount] = useUiState(
         isCollecting,
-        setCollecting,
         isPaused,
-        setIsPaused,
-        toggleConnection,
-        retrieveRssi,
-        ScanButton,
-        NowCount,
-    ] = useUiState(onStartCollecting, onStopCollecting);
-    const [ConnectionIndicator] = useConnected(getSelectedPeripheralId());
+        nowCount,
+        onStartScanning,
+        onStartCollecting,
+        setNowCount,
+        onStopCollecting,
+    );
+    const [ConnectionIndicator] = useConnected(connectedPeripheralId);
     const renderItem = (peripheral: BtCounterPeripheral) => {
         return (
             <PeripheralDetails
-                onPress={() => {
-                    if (getSelectedPeripheralId()) {
-                        setSelectedPeripheralId('');
+                onPress={async () => {
+                    await toggleConnection(peripheral);
+                    if (connectedPeripheralId) {
+                        setConnectedPeripheralId('');
                     } else {
-                        setSelectedPeripheralId(peripheral.peripheral.id);
+                        setConnectedPeripheralId(peripheral.peripheral.id);
                     }
-                    toggleConnection(peripheral);
-                    setIsCOnnected(!peripheral.connected);
+                    setIsConnected(peripheral.connected);
                 }}
                 item={peripheral}
                 key={peripheral.peripheral.id}
@@ -122,7 +130,7 @@ const App = () => {
                     <View style={styles.body}>
                         <View style={{margin: 10, flexDirection: 'row', justifyContent: 'space-between'}}>
                             <View style={{flexGrow: 5}}>
-                                <ConnectionIndicator />
+                                <ConnectionIndicator connected={isConnected} />
                             </View>
                             <Text style={{textAlign: 'left', textAlignVertical: 'center', padding: 2, flexGrow: 1}} />
                             <View style={{flexGrow: 5}}>
@@ -148,7 +156,14 @@ const App = () => {
                         )}
                     </View>
                 </ScrollView>
-                <FlatList data={list} renderItem={({item}) => renderItem(item)} keyExtractor={item => item.id} />
+                <View style={styles.scrollView}>
+                    <FlatList
+                        style={{margin: 10}}
+                        data={list}
+                        renderItem={({item}) => renderItem(item)}
+                        keyExtractor={item => item.id}
+                    />
+                </View>
             </SafeAreaView>
             <SafeAreaView>
                 <View style={styles.body}>
@@ -156,10 +171,10 @@ const App = () => {
                     <MostRecent mostRecentCount={mostRecentCount} date={mostRecentCountDate} />
                     <NowCount disabled={!isConnected} />
                     <Pause
-                        disabled={!isCollecting() || !isConnected}
-                        paused={isPaused()}
+                        disabled={!isCollecting || !isConnected}
+                        paused={isPaused}
                         onPausePressed={() => {
-                            setIsPaused(!isPaused());
+                            setIsPaused(!isPaused);
                         }}
                     />
                     <ClearTotalAndHelp

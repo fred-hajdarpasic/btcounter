@@ -5,7 +5,7 @@ const useRefreshTimer = (interval: number, tickFunction: () => void) => {
         let timerId: NodeJS.Timeout;
         const start = () => {
             timerId = setInterval(() => {
-                // console.log('Timer tick');
+                console.log('Timer tick');
                 tickFunction();
             }, interval);
         };
