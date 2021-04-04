@@ -37,27 +37,26 @@ const App = () => {
     }, []);
 
     const onStopCollecting = React.useCallback(() => {
-        if (nowCount === 0) {
-            return;
-        }
-        const newTotalCount: number = totalCount + nowCount;
-        const newMostRecentCount = nowCount;
-        const newMostRecentCountDate = new Date();
-
-        setTotalCount(newTotalCount);
-        setMostRecentCount(newMostRecentCount);
-        setMostRecentCountDate(newMostRecentCountDate);
         setIsPaused(true);
         setIsCollecting(false);
+        if (nowCount > 0) {
+            const newTotalCount: number = totalCount + nowCount;
+            const newMostRecentCount = nowCount;
+            const newMostRecentCountDate = new Date();
 
-        (async () => {
-            await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
-            await AsyncStorage.setItem('mostRecentCount', `${newMostRecentCount}`);
-            await AsyncStorage.setItem('mostRecentCountDate', `${newMostRecentCountDate}`);
-            console.log(
-                `Saved data to async storage newTotalCount = ${newTotalCount}, newMostRecentCount=${newMostRecentCount}, newMostRecentCountDate=${newMostRecentCountDate}`,
-            );
-        })();
+            setTotalCount(newTotalCount);
+            setMostRecentCount(newMostRecentCount);
+            setMostRecentCountDate(newMostRecentCountDate);
+
+            (async () => {
+                await AsyncStorage.setItem('totalCount', `${newTotalCount}`);
+                await AsyncStorage.setItem('mostRecentCount', `${newMostRecentCount}`);
+                await AsyncStorage.setItem('mostRecentCountDate', `${newMostRecentCountDate}`);
+                console.log(
+                    `Saved data to async storage newTotalCount = ${newTotalCount}, newMostRecentCount=${newMostRecentCount}, newMostRecentCountDate=${newMostRecentCountDate}`,
+                );
+            })();
+        }
     }, [nowCount, totalCount]);
 
     const onStartScanning = () => {
@@ -164,8 +163,6 @@ const App = () => {
                         keyExtractor={item => item.id}
                     />
                 </View>
-            </SafeAreaView>
-            <SafeAreaView>
                 <View style={styles.body}>
                     <TotalCount totalCount={totalCount} />
                     <MostRecent mostRecentCount={mostRecentCount} date={mostRecentCountDate} />
